@@ -1,3 +1,4 @@
+from app.api import ping
 from app.db import database, engine, metadata
 from fastapi import FastAPI
 
@@ -13,4 +14,4 @@ async def startup():
 async def shutdown():
     await database.disconnect()
 
-# app.include_router()
+app.include_router(ping.router)

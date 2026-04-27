@@ -2,13 +2,14 @@ import datetime
 import os
 from sqlalchemy import (MetaData, String, create_engine,
                         Text, ForeignKey, CheckConstraint, Enum, DateTime)
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
-from databases import Database
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-engine = create_engine(DATABASE_URL)
+engine = create_async_engine(DATABASE_URL)
+async_session = async_sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 metadata = MetaData()
 
 class Base(DeclarativeBase):
@@ -96,6 +97,6 @@ class OperationHistory(Base):
     def object(self):
         return self.room or self.laptop
 
-
-# databases query builder
-database = Database(DATABASE_URL)
+async def get_db():
+    async with async_session() as session:
+        yield session
