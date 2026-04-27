@@ -1,21 +1,26 @@
 # Основной стек
-fastapi>=0.115.0
+fastapi>=0.119.1
 uvicorn[standard]>=0.30.0
 
 # Работа с данными и валидация
-pydantic[email]>=2.9.0
-email-validator>=2.0.0
-python-multipart>=0.0.9
+pydantic[email]>=2.13.3
+email-validator>=2.3.0
+python-multipart>=0.0.27
 
 # Шаблоны и статика
-jinja2>=3.1.0
-aiofiles>=23.0.0
+jinja2>=3.1.6
+aiofiles>=25.1.0
 
-asyncpg>=0.29.0
+#db
+SQLAlchemy>=2.0.0
+asyncpg>=0.31.0
+alembic>=1.18.4
+databases[postgresql]
+psycopg2-binary>=2.9.1
 
 # Безопасность (хэширование паролей)
 passlib[bcrypt]==1.7.4
 
 # Графики и генерация данных
-matplotlib>=3.10.0
-Faker>=25.2.0
+matplotlib>=3.10.9
+Faker>=29.0.0

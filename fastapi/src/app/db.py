@@ -1,14 +1,13 @@
+import datetime
 import os
-
-from sqlalchemy import (Column, MetaData, String, Table,
-                        create_engine, Boolean, Text, ForeignKey, CheckConstraint, Enum)
+from sqlalchemy import (MetaData, String, create_engine,
+                        Text, ForeignKey, CheckConstraint, Enum, DateTime)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 from databases import Database
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# SQLAlchemy
 engine = create_engine(DATABASE_URL)
 metadata = MetaData()
 
@@ -36,8 +35,8 @@ class Room(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     capacity: Mapped[int] = mapped_column(nullable=False)
-    has_board: Mapped[Boolean] = mapped_column(nullable=False)
-    has_projector: Mapped[Boolean] = mapped_column(nullable=False)
+    has_board: Mapped[bool] = mapped_column(nullable=False)
+    has_projector: Mapped[bool] = mapped_column(nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
 
     operations: Mapped[list["OperationHistory"]] = relationship(
@@ -77,9 +76,9 @@ class OperationHistory(Base):
     room_id: Mapped[int | None] = mapped_column(ForeignKey("room.id"))
     laptop_id: Mapped[int | None] = mapped_column(ForeignKey("laptop.id"))
     operation_type: Mapped[str] = mapped_column(Enum("book", "cancel", name="operation_type_enum"), nullable=False)
-    created_at: Mapped[DateTime] = mapped_column(default=func.now(), nullable=False)
-    booked_from: Mapped[DateTime] = mapped_column(nullable=False)
-    booked_to: Mapped[DateTime] = mapped_column(nullable=False)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=func.now(), nullable=False)
+    booked_from: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False)
+    booked_to: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False)
 
     booker: Mapped["User"] = relationship(back_populates="operations")
 
@@ -96,7 +95,6 @@ class OperationHistory(Base):
     @property
     def object(self):
         return self.room or self.laptop
-
 
 
 # databases query builder
