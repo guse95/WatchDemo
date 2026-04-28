@@ -28,6 +28,10 @@ class User(Base):
         back_populates="booker"
     )
 
+    sessions: Mapped[list["Sessions"]] = relationship(
+        back_populates="user"
+    )
+
 
 class Resource(Base):
     __tablename__ = "resource"
@@ -59,9 +63,24 @@ class OperationHistory(Base):
 
     booker: Mapped["User"] = relationship(back_populates="operations")
 
-    resource: Mapped["Resource | None"] = relationship(
+    resource: Mapped["Resource"] = relationship(
         back_populates="operations",
         foreign_keys=[resource_id]
+    )
+
+class Sessions(Base):
+    __tablename__ = "sessions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
+    refresh_token_hash: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False)
+    expires_at: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False)
+    revoked_at: Mapped[datetime.datetime | None] = mapped_column(DateTime, nullable=True)
+    user_agent: Mapped[str] = mapped_column(Text, nullable=False)
+
+    user: Mapped["User"] = relationship(
+        back_populates="sessions"
     )
 
 async def get_db():
