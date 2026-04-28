@@ -1,5 +1,5 @@
-from app.api import ping
-from app.api import users
+from app.api import ping, admin, user
+from app.api import auth
 from app.db import engine
 from fastapi import FastAPI
 
@@ -17,4 +17,6 @@ async def shutdown():
     await engine.dispose()
 
 app.include_router(ping.router)
-app.include_router(users.router)
+app.include_router(auth.router, prefix="/auth")
+app.include_router(admin.router, prefix="/admin")
+app.include_router(user.router, prefix="/user")

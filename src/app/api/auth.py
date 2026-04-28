@@ -1,13 +1,13 @@
 import os
 import random
 
+
 import aiosmtplib
 from fastapi import APIRouter, Depends, HTTPException
+from passlib.context import CryptContext
+from passlib.handlers import bcrypt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql import crud
-from starlette import responses
-import ssl
 from email.message import EmailMessage
 
 from app.db import get_db, User
@@ -15,44 +15,37 @@ from app.models.CodeStorage import saveCode, verifyCode
 from app.models.RegistrationModel import UserData, UserDataDB
 
 router = APIRouter()
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-@router.post("/register/", response_model=UserDataDB, status_code=200)
+@router.post("/register", response_model=UserDataDB, status_code=200)
 async def register(user: UserData, db: AsyncSession = Depends(get_db)):
     # TODO: убрать за ненадобностью
     result = await db.execute(select(User).where(User.email == user.email))
     if result.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    new_user = User(
-        email=user.email,
-        username=user.username,
-        password_hash="test",
-        pass_level=user.pass_level
-    )
-    db.add(new_user)
-    await db.commit()
-    await db.refresh(new_user)
-    return (new_user
-
-
-@router.post("/login/", response_model=UserDataDB, status_code=200))
-async def login(user: UserData, db: AsyncSession = Depends(get_db)):
-
-    # TODO: убрать за ненадобностью
-    result = await db.execute(select(User).where(User.email == user.email))
-    if result.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Email already registered")
 
     new_user = User(
         email=user.email,
         username=user.username,
-        password_hash="test",
+        password_hash=pwd_context.hash(user.password),
         pass_level=user.pass_level
     )
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
     return new_user
+
+
+# @router.post("/login", response_model=JWT, status_code=200)
+# async def login(user: UserData, db: AsyncSession = Depends(get_db)):
+#     # TODO: убрать за ненадобностью
+#     result = await db.execute(select(User).where(User.email == user.email))
+#     if result.scalar_one_or_none() == None:
+#         raise HTTPException(status_code=400, detail="Email is not registered")
+#
+#
+#     return
 
 @router.get("/check-email", status_code=200)
 async def check_email(email: str, db: AsyncSession = Depends(get_db)):
