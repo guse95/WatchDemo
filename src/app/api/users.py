@@ -9,7 +9,7 @@ from app.models.RegistrationModel import UserData, UserDataDB
 
 router = APIRouter()
 
-@router.post("/register", response_model=UserDataDB, status_code=200)
+@router.post("/register/", response_model=UserDataDB, status_code=200)
 async def register(user: UserData, db: AsyncSession = Depends(get_db)):
     # user_id = await crud.create_user(user)
     # response = {
