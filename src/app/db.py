@@ -1,7 +1,6 @@
 import datetime
 import os
-from sqlalchemy import (MetaData, String, create_engine,
-                        Text, ForeignKey, CheckConstraint, Enum, DateTime, JSON)
+from sqlalchemy import (MetaData, String, Text, ForeignKey, Enum, DateTime, JSON)
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
