@@ -6,8 +6,8 @@ services:
       - ./src/:/usr/src/app/
     ports:
       - "8002:8000"
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://app:app@db/web_fastapi_dev
+    env_file:
+      - .env
     depends_on:
       db:
         condition: service_healthy
@@ -26,11 +26,11 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     environment:
-      - POSTGRES_USER=app
-      - POSTGRES_PASSWORD=app
-      - POSTGRES_DB=web_fastapi_dev
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U app -d web_fastapi_dev" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
       interval: 5s
       timeout: 5s
       retries: 5

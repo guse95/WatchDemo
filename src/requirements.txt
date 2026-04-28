@@ -18,6 +18,9 @@ alembic>=1.18.4
 databases[postgresql]
 psycopg2-binary>=2.9.1
 
+# smtp client
+aiosmtplib>=5.0.0
+
 # Безопасность (хэширование паролей)
 passlib[bcrypt]==1.7.4
 
