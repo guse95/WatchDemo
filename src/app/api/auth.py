@@ -2,6 +2,8 @@ import os
 import random
 import aiosmtplib
 from fastapi import APIRouter, Depends, HTTPException
+from passlib.context import CryptContext
+from passlib.handlers import bcrypt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from email.message import EmailMessage
@@ -40,6 +42,7 @@ def hash_token(token: str):
 
 
 router = APIRouter()
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 @router.post("/register", response_model=AuthTokens, status_code=200)
