@@ -27,7 +27,6 @@ async def register(user: UserData, db: AsyncSession = Depends(get_db)):
     new_user = User(
         email=user.email,
         username=user.username,
-        login=user.login,
         password_hash="test",
         pass_level=user.pass_level
     )

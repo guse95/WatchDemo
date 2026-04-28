@@ -3,9 +3,12 @@ from pydantic import BaseModel, EmailStr
 
 class UserData(BaseModel):
     email: EmailStr
-    username: str
-    login: str
+    password: str
     pass_level: int
+    username: str | None
 
-class UserDataDB(UserData):
+class UserDataDB(BaseModel):
     id: int
+    email: EmailStr
+    pass_level: int
+    username: str | None
