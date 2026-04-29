@@ -1,0 +1,58 @@
+import 'dart:convert';
+import 'package:frontend/logic/http_requests.dart';
+import 'package:frontend/logic/service.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+
+class AuthService {
+  static const _accessTokenKey = 'access_token';
+  static const _refreshTokenKey = 'refresh_token';
+
+  Future<void> saveTokens({required String accessToken, required String refreshToken}) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_accessTokenKey, accessToken);
+    await prefs.setString(_refreshTokenKey, refreshToken);
+  }
+
+  Future<String?> getAccessToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_accessTokenKey);
+  }
+
+  Future<String?> getRefreshToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_refreshTokenKey);
+  }
+
+  Future<void> removeTokens() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_accessTokenKey);
+    await prefs.remove(_refreshTokenKey);
+    logMsg("D", "Auth service", "Tokens removed.");
+  }
+
+  Future<bool> isLoggedIn() async {
+    try {
+      final refToken = await getRefreshToken();
+      if (refToken == null || refToken.isEmpty) {
+        logMsg("D", "Is logged in", "No saved token. User is not logged id.");
+        return false;
+      }
+      logMsg("D", "Is logged in", "Found token: $refToken");
+
+      final response = await HttpRequests().sendWhoisRequest(refToken: refToken);
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        logMsg("D", "Is logged in", "User is logged in.");
+        return true;
+      } else {
+        logMsg("E", "Is logged in", "User is not logged in.");
+        return false;
+      }
+    } catch (e) {
+      logMsg("E", "Is logged in", e.toString());
+      return false;
+    }
+  }
+}

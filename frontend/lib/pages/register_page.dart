@@ -1,9 +1,14 @@
+import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:frontend/elements/cls_textfield.dart';
 import 'package:frontend/elements/ios_like_clipper.dart';
+import 'package:frontend/logic/auth_service.dart';
+import 'package:frontend/logic/http_requests.dart';
 import 'package:frontend/pages/login_page.dart';
-import 'package:frontend/service.dart';
+import 'package:frontend/logic/service.dart';
+
+import 'home_page.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -16,6 +21,53 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _emailTextController = TextEditingController();
   final TextEditingController _pass1TextController = TextEditingController();
   final TextEditingController _pass2TextController = TextEditingController();
+  String? _emailTextError;
+  String? _passError;
+
+  Future<void> register() async {
+    if (_emailTextController.text.isEmpty) {
+      setState(() => _emailTextError = "Укажите e-mail");
+      return;
+    }
+    if (_pass1TextController.text.isEmpty) {
+      setState(() => _passError = "Придумайте пароль");
+      return;
+    }
+    if (_pass1TextController.text != _pass2TextController.text) {
+      setState(() => _passError = "Пароли не совпадают");
+      return;
+    }
+
+    final userAgent = getBrowserName();
+    logMsg("D", "Register", "Got user agent - $userAgent.");
+
+    final r = await HttpRequests().sendRegisterRequest(
+      email: _emailTextController.text,
+      password: _pass1TextController.text,
+      agent: userAgent,
+    );
+    final body = jsonDecode(r.body);
+    if (r.statusCode == 200) {
+      final accessToken = body["access_token"];
+      final refreshToken = body["refresh_token"];
+      await AuthService().saveTokens(accessToken: accessToken, refreshToken: refreshToken);
+      logMsg("D", "Register", "Tokens saved.");
+      if (!mounted) return;
+      navToPageClearly(context, HomePage());
+      return;
+    }
+    if (r.statusCode == 400) {
+      final detail = body["detail"];
+      if (detail == "Email already registered") {
+        setState(() => _emailTextError = "Этот e-mail уже зарегистрирован");
+        return;
+      }
+    }
+    if (r.statusCode == 422) {
+      setState(() => _emailTextError = "Некорректный e-mail");
+      return;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +109,14 @@ class _RegisterPageState extends State<RegisterPage> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          ClsTextfield(controller: _emailTextController, hint: "e-mail"),
+                          ClsTextfield(
+                            controller: _emailTextController,
+                            hint: "e-mail",
+                            errorText: _emailTextError,
+                            onChanged: (_) {
+                              setState(() => _emailTextError = null);
+                            },
+                          ),
                           const SizedBox(height: 16),
                           Align(
                             alignment: Alignment.centerLeft,
@@ -67,9 +126,25 @@ class _RegisterPageState extends State<RegisterPage> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          ClsTextfield(controller: _pass1TextController, hint: "Пароль", hide: true),
+                          ClsTextfield(
+                            controller: _pass1TextController,
+                            hint: "Пароль",
+                            hide: true,
+                            errorText: _passError,
+                            onChanged: (_) {
+                              setState(() => _passError = null);
+                            },
+                          ),
                           const SizedBox(height: 8),
-                          ClsTextfield(controller: _pass2TextController, hint: "Подтверждение пароля", hide: true),
+                          ClsTextfield(
+                            controller: _pass2TextController,
+                            hint: "Подтверждение пароля",
+                            hide: true,
+                            errorText: _passError,
+                            onChanged: (_) {
+                              setState(() => _passError = null);
+                            },
+                          ),
                           const SizedBox(height: 32),
                           Material(
                             color: Colors.deepPurple,
@@ -80,8 +155,9 @@ class _RegisterPageState extends State<RegisterPage> {
                               height: 50,
                               width: double.infinity,
                               child: InkWell(
-                                onTap: () {
-                                  print("Зарегистрироваться");
+                                onTap: () async {
+                                  logMsg("D", "Register page", "Tapped - register.");
+                                  await register();
                                 },
                                 child: Center(
                                   child: Text(
@@ -109,7 +185,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                   overlayColor: Colors.transparent,
                                 ),
                                 onPressed: () {
-                                  print("Go to login");
+                                  logMsg("D", "Register page", "Tapped - go to login.");
                                   navToPageClearly(context, LoginPage());
                                 },
                                 child: Text(

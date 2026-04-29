@@ -1,9 +1,13 @@
+import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:frontend/elements/cls_textfield.dart';
 import 'package:frontend/elements/ios_like_clipper.dart';
+import 'package:frontend/logic/auth_service.dart';
+import 'package:frontend/logic/http_requests.dart';
+import 'package:frontend/pages/home_page.dart';
 import 'package:frontend/pages/register_page.dart';
-import 'package:frontend/service.dart';
+import 'package:frontend/logic/service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -14,7 +18,56 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailTextController = TextEditingController();
+  String? _emailErrorText;
   final TextEditingController _passTextController = TextEditingController();
+  String? _passErrorText;
+
+  Future<void> login() async {
+    if (_emailTextController.text.isEmpty) {
+      setState(() => _emailErrorText = "Укажите e-mail");
+      return;
+    }
+    if (!_emailTextController.text.contains("@")) {
+      setState(() => _emailErrorText = "Некорректный e-mail");
+      return;
+    }
+    if (_passTextController.text.isEmpty) {
+      setState(() => _passErrorText = "Введите пароль");
+      return;
+    }
+
+    final userAgent = getBrowserName();
+    logMsg("D", "Login", "Got user agent - $userAgent.");
+
+    final r = await HttpRequests().sendLoginRequest(email: _emailTextController.text, password: _passTextController.text, agent: userAgent);
+    final body = jsonDecode(r.body);
+    if (r.statusCode == 200) {
+      final accessToken = body["access_token"];
+      final refreshToken = body["refresh_token"];
+      await AuthService().saveTokens(accessToken: accessToken, refreshToken: refreshToken);
+      logMsg("D", "Login", "Tokens saved.");
+      if (!mounted) return;
+      navToPageClearly(context, HomePage());
+      return;
+    }
+    if (r.statusCode == 400) {
+      final detail = body["detail"];
+      if (detail == "No user with this email") {
+        setState(() => _emailErrorText = "Этот e-mail не зарегистрирован");
+        return;
+      } else if (detail == "Invalid password") {
+        setState(() => _passErrorText = "Неверный пароль");
+        return;
+      }
+    }
+    if (r.statusCode == 422) {
+      final msg = body['detail'][0]['msg'];
+      if (msg.contains("not a valid email")) {
+        setState(() => _emailErrorText = "Некорректный e-mail");
+        return;
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,9 +106,24 @@ class _LoginPageState extends State<LoginPage> {
                             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.white),
                           ),
                           const SizedBox(height: 32),
-                          ClsTextfield(controller: _emailTextController, hint: "e-mail"),
+                          ClsTextfield(
+                            controller: _emailTextController,
+                            hint: "e-mail",
+                            errorText: _emailErrorText,
+                            onChanged: (_) {
+                              setState(() => _emailErrorText = null);
+                            },
+                          ),
                           const SizedBox(height: 12),
-                          ClsTextfield(controller: _passTextController, hint: "Пароль", hide: true),
+                          ClsTextfield(
+                            controller: _passTextController,
+                            hint: "Пароль",
+                            hide: true,
+                            errorText: _passErrorText,
+                            onChanged: (_) {
+                              setState(() => _passErrorText = null);
+                            },
+                          ),
                           Padding(
                             padding: const EdgeInsets.fromLTRB(0, 6, 6, 0),
                             child: Align(
@@ -69,7 +137,7 @@ class _LoginPageState extends State<LoginPage> {
                                   overlayColor: Colors.transparent,
                                 ),
                                 onPressed: () {
-                                  print("Forgot password");
+                                  logMsg("D", "Login page", "Tapped - forgot password.");
                                 },
                                 child: Text(
                                   "Забыли пароль?",
@@ -95,8 +163,9 @@ class _LoginPageState extends State<LoginPage> {
                               height: 50,
                               width: double.infinity,
                               child: InkWell(
-                                onTap: () {
-                                  print("Login");
+                                onTap: () async {
+                                  logMsg("D", "Login page", "Tapped - login.");
+                                  await login();
                                 },
                                 child: Center(
                                   child: Text(
@@ -124,7 +193,7 @@ class _LoginPageState extends State<LoginPage> {
                                   overlayColor: Colors.transparent,
                                 ),
                                 onPressed: () {
-                                  print("Go to Register");
+                                  logMsg("D", "Login page", "Tapped - go to register.");
                                   navToPageClearly(context, RegisterPage());
                                 },
                                 child: Text(
