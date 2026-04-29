@@ -2,22 +2,22 @@ import os
 import random
 import aiosmtplib
 from fastapi import APIRouter, Depends, HTTPException
-from passlib.context import CryptContext
-from passlib.handlers import bcrypt
+from pwdlib import PasswordHash
+from pwdlib.hashers.bcrypt import BcryptHasher
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from email.message import EmailMessage
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 import jwt
 import secrets
 import hashlib
 
 from app.db import get_db, User, Sessions
-from app.models.CodeStorage import saveCode, verifyCode
+from app.features.CodeStorage import saveCode, verifyCode
 from app.models.AuthModel import RegistrationData, AuthTokens, LoginData, WhoisInfo
 
 
-def create_access_token(user_id: int, session_id: str):
+def create_access_token(user_id: int, session_id: int):
     expire = datetime.now() + timedelta(minutes=15)
 
     payload = {
@@ -42,7 +42,13 @@ def hash_token(token: str):
 
 
 router = APIRouter()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = PasswordHash([BcryptHasher()])
+
+def hash_password(password: str):
+    return pwd_context.hash(password)
+
+def verify_password(plain_password: str, hashed_password: str):
+    return pwd_context.verify(plain_password, hashed_password)
 
 
 @router.post("/register", response_model=AuthTokens, status_code=200)
@@ -54,7 +60,7 @@ async def register(reg_data: RegistrationData, db: AsyncSession = Depends(get_db
     new_user = User(
         email=reg_data.email,
         username=reg_data.username,
-        password_hash=reg_data.password,
+        password_hash=hash_password(reg_data.password),
         pass_level=1
     )
     db.add(new_user)
@@ -76,7 +82,6 @@ async def register(reg_data: RegistrationData, db: AsyncSession = Depends(get_db
     access_token = create_access_token(new_user.id, new_session.id)
 
     await db.commit()
-    await db.refresh(new_session)
 
     return {
         "access_token": access_token,
@@ -91,7 +96,7 @@ async def login(login_data: LoginData, db: AsyncSession = Depends(get_db)):
     if not existing_user:
         raise HTTPException(status_code=400, detail="No user with this email")
 
-    if existing_user.password_hash != login_data.password:
+    if not verify_password(login_data.password, existing_user.password_hash):
         raise HTTPException(status_code=400, detail="Invalid password")
 
     refresh_token = create_refresh_token()
