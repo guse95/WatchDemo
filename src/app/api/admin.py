@@ -3,12 +3,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db, Resource
+from app.features.JWTChecker import get_current_user
 from app.models.RegistrationModel import ResourceDTO, ResourceData, EditResourceData
 
 router = APIRouter()
 
 @router.post("/", response_model=ResourceDTO)
-async def create_resource(resource: ResourceData, db: AsyncSession = Depends(get_db)):
+async def create_resource(resource: ResourceData, user_id: int = Depends(get_current_user),  db: AsyncSession = Depends(get_db)):
     new_resource = Resource(
         name=resource.name,
         type=resource.type,
@@ -22,7 +23,7 @@ async def create_resource(resource: ResourceData, db: AsyncSession = Depends(get
     return new_resource
 
 @router.put("/", response_model=ResourceDTO)
-async def update_resource(resource_data: EditResourceData, db: AsyncSession = Depends(get_db)):
+async def update_resource(resource_data: EditResourceData, user_id: int = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     resource = await db.execute(select(Resource).where(Resource.id == resource_data.id))
 
     resource = resource.scalar_one_or_none()
