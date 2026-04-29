@@ -17,7 +17,7 @@ from app.models.CodeStorage import saveCode, verifyCode
 from app.models.AuthModel import RegistrationData, AuthTokens, LoginData, WhoisInfo
 
 
-def create_access_token(user_id: int, session_id: str):
+def create_access_token(user_id: int, session_id: int):
     expire = datetime.now() + timedelta(minutes=15)
 
     payload = {
@@ -76,7 +76,6 @@ async def register(reg_data: RegistrationData, db: AsyncSession = Depends(get_db
     access_token = create_access_token(new_user.id, new_session.id)
 
     await db.commit()
-    await db.refresh(new_session)
 
     return {
         "access_token": access_token,
@@ -149,7 +148,7 @@ async def refresh(ref_token: str, db: AsyncSession = Depends(get_db)):
     }
 
 
-@router.post("/whois", response_model=WhoisInfo, status_code=200)
+@router.get("/whois", response_model=WhoisInfo, status_code=200)
 async def refresh(ref_token: str, db: AsyncSession = Depends(get_db)):
     ref_token_hash = hash_token(ref_token)
     result = await db.execute(select(Sessions).where(Sessions.refresh_token_hash == ref_token_hash))
