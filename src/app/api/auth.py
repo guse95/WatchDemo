@@ -154,8 +154,8 @@ async def refresh(ref_token: str, db: AsyncSession = Depends(get_db)):
     }
 
 
-@router.post("/whois", response_model=WhoisInfo, status_code=200)
-async def refresh(ref_token: str, db: AsyncSession = Depends(get_db)):
+@router.get("/whois", response_model=WhoisInfo, status_code=200)
+async def whois(ref_token: str, db: AsyncSession = Depends(get_db)):
     ref_token_hash = hash_token(ref_token)
     result = await db.execute(select(Sessions).where(Sessions.refresh_token_hash == ref_token_hash))
     session = result.scalar_one_or_none()
