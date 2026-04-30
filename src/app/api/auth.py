@@ -114,7 +114,7 @@ async def login(login_data: LoginData, db: AsyncSession = Depends(get_db)):
     await db.flush()
     await db.commit()
 
-    access_token = create_access_token(existing_user.id, new_session.id)
+    access_token = create_access_token(existing_user.id, new_session.id, existing_user.pass_level)
     return {
         "access_token": access_token,
         "refresh_token": refresh_token,
@@ -161,7 +161,7 @@ async def whois(ref_token: str, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Sessions).where(Sessions.refresh_token_hash == ref_token_hash))
     session = result.scalar_one_or_none()
     if not session:
-        raise HTTPException(status_code=400, detail="Invalid refresh token")
+        raise HTTPException(status_code=400, detail="Session with this token does not exist")
 
     user_res = await db.execute(select(User).where(User.id == session.user_id))
     user = user_res.scalar_one_or_none()
