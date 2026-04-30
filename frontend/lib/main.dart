@@ -21,7 +21,7 @@ class OfficeApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Watch demo',
-      theme: ThemeData(useMaterial3: true, fontFamily: "ClusterAppFont"),
+      theme: ThemeData(useMaterial3: true, fontFamily: "Inter"),
       home: FutureBuilder<bool>(
         future: checkAuth(),
         builder: (context, snapshot) {

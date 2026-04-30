@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:frontend/logic/http_requests.dart';
 import 'package:frontend/logic/service.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
@@ -47,7 +46,8 @@ class AuthService {
         logMsg("D", "Is logged in", "User is logged in.");
         return true;
       } else {
-        logMsg("E", "Is logged in", "User is not logged in.");
+        await removeTokens();
+        logMsg("E", "Is logged in", "User is not logged in. Tokens deleted.");
         return false;
       }
     } catch (e) {

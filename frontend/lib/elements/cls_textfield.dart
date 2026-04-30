@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:frontend/colors.dart';
+import 'package:frontend/txt_styles.dart';
 import 'ios_like_clipper.dart';
 
 class ClsTextfield extends StatelessWidget {
@@ -31,10 +32,10 @@ class ClsTextfield extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(18, 3, 6, 3),
         child: TextField(
           controller: controller,
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: textC),
+          style: TxtStyles.bodyMedium.copyWith(color: blackC),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.w300, color: textC),
+            hintStyle: TxtStyles.caption.copyWith(color: blackC),
             errorText: errorText,
             border: InputBorder.none,
           ),
