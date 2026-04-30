@@ -17,12 +17,13 @@ from app.features.CodeStorage import saveCode, verifyCode
 from app.models.AuthModel import RegistrationData, AuthTokens, LoginData, WhoisInfo
 
 
-def create_access_token(user_id: int, session_id: int):
+def create_access_token(user_id: int, session_id: int, pass_level: int):
     expire = datetime.now() + timedelta(minutes=15)
 
     payload = {
         "sub": str(user_id),
         "session_id": session_id,
+        "pass_lvl": pass_level,
         "exp": expire
     }
 
@@ -79,7 +80,7 @@ async def register(reg_data: RegistrationData, db: AsyncSession = Depends(get_db
     db.add(new_session)
     await db.flush()
 
-    access_token = create_access_token(new_user.id, new_session.id)
+    access_token = create_access_token(new_user.id, new_session.id, new_user.pass_level)
 
     await db.commit()
 
