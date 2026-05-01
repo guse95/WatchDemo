@@ -164,6 +164,9 @@ async def whois(ref_token: str, user_id: int = Depends(get_current_user), db: As
     if not session:
         raise HTTPException(status_code=400, detail="Session with this token does not exist")
 
+    if session.revoked_at is not None:
+        raise HTTPException(status_code=400, detail="Refresh token expired")
+
     user_res = await db.execute(select(User).where(User.id == session.user_id))
     user = user_res.scalar_one_or_none()
     if not user:
