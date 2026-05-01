@@ -14,6 +14,7 @@ import hashlib
 
 from app.db import get_db, User, Sessions
 from app.features.CodeStorage import saveCode, verifyCode
+from app.features.JWTChecker import get_current_user
 from app.models.AuthModel import RegistrationData, AuthTokens, LoginData, WhoisInfo
 
 
@@ -122,7 +123,7 @@ async def login(login_data: LoginData, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/logout", status_code=200)
-async def logout(token: str, db: AsyncSession = Depends(get_db)):
+async def logout(token: str, user_id: int = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     ref_token_hash = hash_token(token)
     result = await db.execute(select(Sessions).where(Sessions.refresh_token_hash == ref_token_hash))
     session = result.scalar_one_or_none()
@@ -135,7 +136,7 @@ async def logout(token: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/refresh", response_model=AuthTokens, status_code=200)
-async def refresh(ref_token: str, db: AsyncSession = Depends(get_db)):
+async def refresh(ref_token: str, user_id: int = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     ref_token_hash = hash_token(ref_token)
     result = await db.execute(select(Sessions).where(Sessions.refresh_token_hash == ref_token_hash))
     session = result.scalar_one_or_none()
@@ -156,7 +157,7 @@ async def refresh(ref_token: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/whois", response_model=WhoisInfo, status_code=200)
-async def whois(ref_token: str, db: AsyncSession = Depends(get_db)):
+async def whois(ref_token: str, user_id: int = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     ref_token_hash = hash_token(ref_token)
     result = await db.execute(select(Sessions).where(Sessions.refresh_token_hash == ref_token_hash))
     session = result.scalar_one_or_none()
