@@ -12,7 +12,7 @@ router = APIRouter()
 async def create_resource(resource: ResourceData, user_id: int = Depends(get_current_user),  db: AsyncSession = Depends(get_db)):
     new_resource = Resource(
         name=resource.name,
-        type=resource.type,
+        type=resource.type.value,
         description=resource.description,
         extra_attributes=resource.extra_attributes
     )
