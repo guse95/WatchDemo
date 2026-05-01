@@ -148,7 +148,7 @@ async def refresh(ref_token: str, db: AsyncSession = Depends(get_db)):
     if datetime.now() - session.created_at > timedelta(days=30):
         raise HTTPException(status_code=400, detail="Refresh token expired")
 
-    new_access_token = create_access_token(session.user_id, session.id)
+    new_access_token = create_access_token(session.user_id, session.id, session.user.pass_level)
     return {
         "access_token": new_access_token,
         "refresh_token": ref_token,
