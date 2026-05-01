@@ -8,7 +8,7 @@ from app.models.RegistrationModel import ResourceDTO, ResourceData, EditResource
 
 router = APIRouter()
 
-@router.post("/", response_model=ResourceDTO)
+@router.post("/create", response_model=ResourceDTO)
 async def create_resource(resource: ResourceData, user_id: int = Depends(get_current_user),  db: AsyncSession = Depends(get_db)):
     new_resource = Resource(
         name=resource.name,
@@ -22,7 +22,7 @@ async def create_resource(resource: ResourceData, user_id: int = Depends(get_cur
     await db.refresh(new_resource)
     return new_resource
 
-@router.put("/", response_model=ResourceDTO)
+@router.put("/update", response_model=ResourceDTO)
 async def update_resource(resource_data: EditResourceData, user_id: int = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     resource = await db.execute(select(Resource).where(Resource.id == resource_data.id))
 
