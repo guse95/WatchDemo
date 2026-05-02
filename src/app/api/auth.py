@@ -18,11 +18,12 @@ from app.features.JWTChecker import get_current_user
 from app.models.AuthModel import RegistrationData, AuthTokens, LoginData, WhoisInfo
 
 
-def create_access_token(user_id: int, session_id: int, pass_level: int):
+def create_access_token(user_id: int, email: str, session_id: int, pass_level: int):
     expire = datetime.now() + timedelta(minutes=15)
 
     payload = {
         "sub": str(user_id),
+        "email": email,
         "session_id": session_id,
         "pass_lvl": pass_level,
         "exp": expire
@@ -81,7 +82,7 @@ async def register(reg_data: RegistrationData, db: AsyncSession = Depends(get_db
     db.add(new_session)
     await db.flush()
 
-    access_token = create_access_token(new_user.id, new_session.id, new_user.pass_level)
+    access_token = create_access_token(new_user.id, new_user.email, new_session.id, new_user.pass_level)
 
     await db.commit()
 
@@ -115,7 +116,7 @@ async def login(login_data: LoginData, db: AsyncSession = Depends(get_db)):
     await db.flush()
     await db.commit()
 
-    access_token = create_access_token(existing_user.id, new_session.id, existing_user.pass_level)
+    access_token = create_access_token(existing_user.id, existing_user.email, new_session.id, existing_user.pass_level)
     return {
         "access_token": access_token,
         "refresh_token": refresh_token,
@@ -149,7 +150,7 @@ async def refresh(ref_token: str, user_id: int = Depends(get_current_user), db: 
     if datetime.now() - session.created_at > timedelta(days=30):
         raise HTTPException(status_code=400, detail="Refresh token expired")
 
-    new_access_token = create_access_token(session.user_id, session.id, session.user.pass_level)
+    new_access_token = create_access_token(session.user_id, session.user.email, session.id, session.user.pass_level)
     return {
         "access_token": new_access_token,
         "refresh_token": ref_token,
