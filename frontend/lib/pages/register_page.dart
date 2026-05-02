@@ -6,9 +6,11 @@ import 'package:frontend/elements/cls_textfield.dart';
 import 'package:frontend/elements/ios_like_clipper.dart';
 import 'package:frontend/logic/auth_service.dart';
 import 'package:frontend/logic/http_requests.dart';
+import 'package:frontend/logic/user_info_provider.dart';
 import 'package:frontend/pages/login_page.dart';
 import 'package:frontend/logic/service.dart';
 import 'package:frontend/txt_styles.dart';
+import 'package:provider/provider.dart';
 
 import 'home_page.dart';
 
@@ -54,7 +56,14 @@ class _RegisterPageState extends State<RegisterPage> {
       final refreshToken = body["refresh_token"];
       await AuthService().saveTokens(accessToken: accessToken, refreshToken: refreshToken);
       logMsg("D", "Register", "Tokens saved.");
+
       if (!mounted) return;
+      final payload = parseJwtPayload(accessToken);
+      int id = int.parse(payload["sub"]);
+      String email = payload["email"];
+      int passLvl = payload["pass_lvl"];
+      logMsg("D", "Login", "Payload: $payload\nID - $id\nEmail - $email\nPass level - $passLvl");
+      context.read<UserInfoProvider>().setUserInfo(id: id, emailAddr: email, passLvl: passLvl);
       navToPageClearly(context, HomePage());
       return;
     }
