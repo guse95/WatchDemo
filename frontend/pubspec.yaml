@@ -113,7 +113,7 @@ flutter:
           weight: 800
         - asset: assets/fonts/Manrope-Bold.ttf
           weight: 700
-        - asset: assets/fonts/Manrope-Semibold.ttf
+        - asset: assets/fonts/Manrope-SemiBold.ttf
           weight: 600
         - asset: assets/fonts/Manrope-Medium.ttf
           weight: 500
@@ -127,7 +127,7 @@ flutter:
           weight: 800
         - asset: assets/fonts/Inter-Bold.otf
           weight: 700
-        - asset: assets/fonts/Inter-Semibold.otf
+        - asset: assets/fonts/Inter-SemiBold.otf
           weight: 600
         - asset: assets/fonts/Inter-Medium.otf
           weight: 500
