@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/colors.dart';
 import 'package:frontend/logic/auth_service.dart';
 import 'package:frontend/logic/user_info_provider.dart';
 import 'package:frontend/pages/home_page.dart';
@@ -26,7 +27,15 @@ class OfficeApp extends StatelessWidget {
         builder: (context) {
           return MaterialApp(
             title: 'Watch demo',
-            theme: ThemeData(useMaterial3: true, fontFamily: "Inter"),
+            theme: ThemeData(
+              useMaterial3: true,
+              fontFamily: "Inter",
+              textSelectionTheme: TextSelectionThemeData(
+                cursorColor: accentGreenC,
+                selectionColor: salatC,
+                selectionHandleColor: accentGreenC,
+              ),
+            ),
             home: FutureBuilder<bool>(
               future: checkAuth(context),
               builder: (context, snapshot) {

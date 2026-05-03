@@ -76,9 +76,7 @@ class HttpRequests {
         id: id,
         name: 'Ресурс $id',
         type: id % 2 == 0 ? 'room' : 'equipment',
-        capacity: id % 2 == 0 ? 8 : null,
-        location: 'Этаж ${(id % 5) + 1}',
-        imageUrl: null,
+        description: "hui",
       );
     });
   }

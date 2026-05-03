@@ -24,19 +24,19 @@ class ResourceCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: resource.imageUrl != null
-                  ? Image.network(
-                resource.imageUrl!,
-                width: double.infinity,
-                fit: BoxFit.cover,
-              )
-                  : Container(
-                width: double.infinity,
-                color: Colors.grey.shade200,
-                child: const Icon(Icons.meeting_room, size: 48),
-              ),
-            ),
+            // Expanded(
+            //   child: resource.imageUrl != null
+            //       ? Image.network(
+            //     resource.imageUrl!,
+            //     width: double.infinity,
+            //     fit: BoxFit.cover,
+            //   )
+            //       : Container(
+            //     width: double.infinity,
+            //     color: Colors.grey.shade200,
+            //     child: const Icon(Icons.meeting_room, size: 48),
+            //   ),
+            // ),
             Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
@@ -49,15 +49,15 @@ class ResourceCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    resource.location ?? 'Локация не указана',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  if (resource.capacity != null)
-                    Text(
-                      'Вместимость: ${resource.capacity}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
+                  // Text(
+                  //   resource.location ?? 'Локация не указана',
+                  //   style: Theme.of(context).textTheme.bodySmall,
+                  // ),
+                  // if (resource.capacity != null)
+                  //   Text(
+                  //     'Вместимость: ${resource.capacity}',
+                  //     style: Theme.of(context).textTheme.bodySmall,
+                  //   ),
                 ],
               ),
             ),
