@@ -1,13 +1,17 @@
 import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:frontend/colors.dart';
 import 'package:frontend/elements/cls_textfield.dart';
 import 'package:frontend/elements/ios_like_clipper.dart';
 import 'package:frontend/logic/auth_service.dart';
 import 'package:frontend/logic/http_requests.dart';
+import 'package:frontend/logic/user_info_provider.dart';
 import 'package:frontend/pages/home_page.dart';
 import 'package:frontend/pages/register_page.dart';
 import 'package:frontend/logic/service.dart';
+import 'package:frontend/txt_styles.dart';
+import 'package:provider/provider.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -46,7 +50,14 @@ class _LoginPageState extends State<LoginPage> {
       final refreshToken = body["refresh_token"];
       await AuthService().saveTokens(accessToken: accessToken, refreshToken: refreshToken);
       logMsg("D", "Login", "Tokens saved.");
+
       if (!mounted) return;
+      final payload = parseJwtPayload(accessToken);
+      int id = int.parse(payload["sub"]);
+      String email = payload["email"];
+      int passLvl = payload["pass_lvl"];
+      logMsg("D", "Login", "Payload: $payload\nID - $id\nEmail - $email\nPass level - $passLvl");
+      context.read<UserInfoProvider>().setUserInfo(id: id, emailAddr: email, passLvl: passLvl);
       navToPageClearly(context, HomePage());
       return;
     }
@@ -96,16 +107,10 @@ class _LoginPageState extends State<LoginPage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           const SizedBox(height: 32),
-                          Text(
-                            "Добро пожаловать!",
-                            style: TextStyle(fontSize: 36, fontWeight: FontWeight.w700, color: Colors.white),
-                          ),
-                          const SizedBox(height: 0),
-                          Text(
-                            "Войдите, чтобы продолжить",
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.white),
-                          ),
-                          const SizedBox(height: 32),
+                          Text("Добро пожаловать!", style: TxtStyles.h1.copyWith(color: milkC)),
+                          const SizedBox(height: 26),
+                          Text("Войдите, чтобы продолжить", style: TxtStyles.body.copyWith(color: milkC)),
+                          const SizedBox(height: 16),
                           ClsTextfield(
                             controller: _emailTextController,
                             hint: "e-mail",
@@ -141,13 +146,11 @@ class _LoginPageState extends State<LoginPage> {
                                 },
                                 child: Text(
                                   "Забыли пароль?",
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white,
+                                  style: TxtStyles.bodyMedium.copyWith(
+                                    color: milkC,
                                     decoration: TextDecoration.underline,
-                                    decorationColor: Colors.white,
-                                    decorationThickness: 1.2,
+                                    decorationColor: milkC,
+                                    decorationThickness: 1,
                                   ),
                                 ),
                               ),
@@ -155,7 +158,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           const SizedBox(height: 32),
                           Material(
-                            color: Colors.deepPurple,
+                            color: accentGreenC,
                             shape: IOSLikeShape(27),
                             clipBehavior: Clip.antiAlias,
                             elevation: 7,
@@ -168,10 +171,7 @@ class _LoginPageState extends State<LoginPage> {
                                   await login();
                                 },
                                 child: Center(
-                                  child: Text(
-                                    "Войти",
-                                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w500, color: Colors.white),
-                                  ),
+                                  child: Text("Войти", style: TxtStyles.buttonLarge.copyWith(color: milkC)),
                                 ),
                               ),
                             ),
@@ -180,10 +180,7 @@ class _LoginPageState extends State<LoginPage> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(
-                                "Нет аккаунта? ",
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white),
-                              ),
+                              Text("Нет аккаунта? ", style: TxtStyles.bodyMedium.copyWith(color: milkC)),
                               TextButton(
                                 style: TextButton.styleFrom(
                                   padding: EdgeInsets.zero,
@@ -198,13 +195,11 @@ class _LoginPageState extends State<LoginPage> {
                                 },
                                 child: Text(
                                   "Зарегистрироваться",
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white,
+                                  style: TxtStyles.bodyMedium.copyWith(
+                                    color: milkC,
                                     decoration: TextDecoration.underline,
-                                    decorationColor: Colors.white,
-                                    decorationThickness: 1.2,
+                                    decorationColor: milkC,
+                                    decorationThickness: 1,
                                   ),
                                 ),
                               ),

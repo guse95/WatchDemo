@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/colors.dart';
 import 'package:frontend/logic/auth_service.dart';
 import 'package:frontend/logic/http_requests.dart';
 import 'package:frontend/logic/service.dart';
 import 'package:frontend/pages/login_page.dart';
+import 'package:frontend/txt_styles.dart';
+import 'package:provider/provider.dart';
+import 'logic/user_info_provider.dart';
 
 class ProfileMenu extends StatelessWidget {
   final VoidCallback onClose;
@@ -11,20 +15,28 @@ class ProfileMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String userEmail = context.read<UserInfoProvider>().email;
+    final String userRole = context.read<UserInfoProvider>().passLevel == 0 ? "Администратор" : "Пользователь";
+
     return Column(
       children: [
-        const SizedBox(height: 24),
+        const SizedBox(height: 18),
         Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(color: Colors.lightBlue, shape: BoxShape.circle),
+          width: 70,
+          height: 70,
+          decoration: BoxDecoration(color: darkGreenC, shape: BoxShape.circle),
+          child: Icon(Icons.person_2_rounded, color: milkC, size: 30),
         ),
+        const SizedBox(height: 6),
+        Text(userEmail, style: TxtStyles.bodyMedium.copyWith(color: darkGreenC)),
+        Text(userRole, style: TxtStyles.bodySmall.copyWith(color: darkGreenC)),
         const SizedBox(height: 20),
+        const Spacer(),
         SizedBox(
           height: 50,
           width: double.infinity,
           child: InkWell(
-            hoverColor: Color.fromRGBO(70, 70, 70, 1),
+            hoverColor: salatC,
             onTap: () async {
               logMsg("D", "Profile menu", "Sign out tapped.");
               final refToken = await AuthService().getRefreshToken();
@@ -54,12 +66,9 @@ class ProfileMenu extends StatelessWidget {
             child: Row(
               children: [
                 const SizedBox(width: 16),
-                Icon(Icons.logout_rounded, color: Colors.white, size: 30),
+                Icon(Icons.logout_rounded, color: darkGreenC, size: 30),
                 const SizedBox(width: 8),
-                Text(
-                  "Выйти",
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, color: Colors.white),
-                ),
+                Text("Выйти", style: TxtStyles.sidebarItem.copyWith(color: darkGreenC)),
               ],
             ),
           ),

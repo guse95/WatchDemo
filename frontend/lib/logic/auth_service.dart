@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:frontend/logic/http_requests.dart';
 import 'package:frontend/logic/service.dart';
-import 'package:http/http.dart' as http;
+import 'package:frontend/logic/user_info_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
 
 class AuthService {
   static const _accessTokenKey = 'access_token';
@@ -31,7 +33,7 @@ class AuthService {
     logMsg("D", "Auth service", "Tokens removed.");
   }
 
-  Future<bool> isLoggedIn() async {
+  Future<bool> isLoggedIn(BuildContext context) async {
     try {
       final refToken = await getRefreshToken();
       if (refToken == null || refToken.isEmpty) {
@@ -45,9 +47,11 @@ class AuthService {
 
       if (response.statusCode == 200) {
         logMsg("D", "Is logged in", "User is logged in.");
+        context.read<UserInfoProvider>().setUserInfo(id: data["id"], emailAddr: data["email"], passLvl: data["pass_level"]);
         return true;
       } else {
-        logMsg("E", "Is logged in", "User is not logged in.");
+        await removeTokens();
+        logMsg("E", "Is logged in", "User is not logged in. Tokens deleted.");
         return false;
       }
     } catch (e) {
