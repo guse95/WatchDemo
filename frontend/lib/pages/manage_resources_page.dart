@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/colors.dart';
+import 'package:frontend/elements/add_resource_menu.dart';
 import 'package:frontend/elements/animated_menu.dart';
 import 'package:frontend/elements/cls_checkbox.dart';
 import 'package:frontend/elements/cls_textfield.dart';
 import 'package:frontend/elements/ios_like_clipper.dart';
+import 'package:frontend/elements/param_textfield.dart';
 import 'package:frontend/logic/service.dart';
 import 'package:frontend/txt_styles.dart';
 
@@ -68,242 +70,6 @@ class ResourceRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 34),
-        ],
-      ),
-    );
-  }
-}
-
-class AddResourceMenu extends StatefulWidget {
-  final VoidCallback onClose;
-
-  const AddResourceMenu({super.key, required this.onClose});
-
-  @override
-  State<AddResourceMenu> createState() => _AddResourceMenuState();
-}
-
-class _AddResourceMenuState extends State<AddResourceMenu> with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
-  int selectedIndex = 0;
-
-  final List<String> _tabNames = ["Комната", "Ноутбук", "Доска", "Проектор"];
-
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
-  final TextEditingController _capacityController = TextEditingController(text: "0");
-  final TextEditingController _areaController = TextEditingController(text: "0");
-  bool _isProjectorChecked = false;
-  bool _isScreenChecked = false;
-  bool _isTvChecked = false;
-  bool _isBoardChecked = false;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _tabController = TabController(length: _tabNames.length, vsync: this);
-
-    _tabController.addListener(() {
-      if (_tabController.index != selectedIndex) {
-        setState(() {
-          selectedIndex = _tabController.index;
-        });
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text("Добавить ресурс", style: TxtStyles.h2.copyWith(color: darkGreenC)),
-          const SizedBox(height: 12),
-          TabBar(
-            controller: _tabController,
-            isScrollable: true,
-            tabAlignment: TabAlignment.start,
-
-            labelPadding: const EdgeInsets.only(right: 24),
-            padding: EdgeInsets.zero,
-
-            overlayColor: WidgetStateProperty.all(Colors.transparent),
-            splashFactory: NoSplash.splashFactory,
-
-            labelColor: accentGreenC,
-            unselectedLabelColor: blackC,
-            labelStyle: TxtStyles.sidebarItemActive.copyWith(color: accentGreenC),
-            unselectedLabelStyle: TxtStyles.sidebarItem.copyWith(color: accentGreenC),
-
-            indicatorColor: darkGreenC,
-            indicatorWeight: 2,
-            indicatorSize: TabBarIndicatorSize.label,
-
-            dividerColor: Colors.transparent,
-            tabs: List.generate(_tabNames.length, (index) {
-              return Tab(text: _tabNames[index]);
-            }),
-          ),
-          const SizedBox(height: 12),
-          ClsTextfield(controller: _nameController, hint: "Название"),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _descriptionController,
-            maxLines: 4,
-            minLines: 2,
-            maxLength: 250,
-            decoration: InputDecoration(
-              labelText: 'Описание',
-              labelStyle: TxtStyles.captionMedium.copyWith(color: blackC),
-              floatingLabelStyle: TxtStyles.captionMedium.copyWith(color: accentGreenC),
-              hintText: 'Введите описание...',
-              hintStyle: TxtStyles.caption.copyWith(color: blackC),
-              alignLabelWithHint: true,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(18)),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(18),
-                borderSide: const BorderSide(color: accentGreenC, width: 2),
-              ),
-            ),
-            style: TxtStyles.body.copyWith(color: lightBlackC),
-          ),
-          const SizedBox(height: 12),
-          Text("Параметры", style: TxtStyles.h3.copyWith(color: darkGreenC)),
-          const SizedBox(height: 8),
-
-          // ROOM
-          if (selectedIndex == 0) ...[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text("Вместимость (чел):", style: TxtStyles.bodyMedium.copyWith(color: blackC)),
-                          const SizedBox(width: 8),
-                          SizedBox(
-                            width: 35,
-                            child: TextField(
-                              controller: _capacityController,
-                              style: TxtStyles.body.copyWith(color: accentGreenC),
-                              decoration: const InputDecoration(
-                                // Убираем всё визуальное оформление поля
-                                border: InputBorder.none,
-                                enabledBorder: InputBorder.none,
-                                focusedBorder: InputBorder.none,
-                                errorBorder: InputBorder.none,
-                                disabledBorder: InputBorder.none,
-                                counterText: "",
-
-                                // Убираем стандартные отступы
-                                isDense: true,
-                                contentPadding: EdgeInsets.zero,
-                              ),
-                              maxLength: 3,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Text("Площадь (м²):", style: TxtStyles.bodyMedium.copyWith(color: blackC)),
-                          const SizedBox(width: 8),
-                          SizedBox(
-                            width: 35,
-                            child: TextField(
-                              controller: _areaController,
-                              style: TxtStyles.body.copyWith(color: accentGreenC),
-                              decoration: const InputDecoration(
-                                // Убираем всё визуальное оформление поля
-                                border: InputBorder.none,
-                                enabledBorder: InputBorder.none,
-                                focusedBorder: InputBorder.none,
-                                errorBorder: InputBorder.none,
-                                disabledBorder: InputBorder.none,
-                                counterText: "",
-
-                                // Убираем стандартные отступы
-                                isDense: true,
-                                contentPadding: EdgeInsets.zero,
-                              ),
-                              maxLength: 3,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          ClsCheckbox(
-                            value: _isProjectorChecked,
-                            onChanged: (value) {
-                              setState(() => _isProjectorChecked = value);
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          Text("Проектор", style: TxtStyles.bodyMedium.copyWith(color: blackC)),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          ClsCheckbox(
-                            value: _isScreenChecked,
-                            onChanged: (value) {
-                              setState(() => _isScreenChecked = value);
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          Text("Экран", style: TxtStyles.bodyMedium.copyWith(color: blackC)),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          ClsCheckbox(
-                            value: _isTvChecked,
-                            onChanged: (value) {
-                              setState(() => _isTvChecked = value);
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          Text("Телевизор", style: TxtStyles.bodyMedium.copyWith(color: blackC)),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          ClsCheckbox(
-                            value: _isBoardChecked,
-                            onChanged: (value) {
-                              setState(() => _isBoardChecked = value);
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          Text("Доска", style: TxtStyles.bodyMedium.copyWith(color: blackC)),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
         ],
       ),
     );
@@ -395,7 +161,7 @@ class _ManageResourcesPageState extends State<ManageResourcesPage> with SingleTi
                         context: context,
                         anchorKey: _addResourceButtonKey,
                         width: 600,
-                        height: 500,
+                        height: 535,
                         backgroundColor: milkC,
                         preferredDirection: AnimatedMenuDirection.bottomRight,
                         shape: IOSLikeShape(30),

@@ -67,10 +67,12 @@ class AnimatedMenu {
 
     OverlayEntry? entry;
     bool isClosing = false;
+    final closingNotifier = ValueNotifier<bool>(false);
 
     Future<void> close() async {
       if (isClosing) return;
       isClosing = true;
+      closingNotifier.value = true;
 
       try {
         if (controller.status != AnimationStatus.dismissed) {
@@ -80,6 +82,7 @@ class AnimatedMenu {
         entry?.remove();
         entry = null;
         controller.dispose();
+        closingNotifier.dispose();
       }
     }
 
@@ -93,6 +96,7 @@ class AnimatedMenu {
           blurSigma: blurSigma,
           child: _AnimatedMenuSheet(
             controller: controller,
+            closingNotifier: closingNotifier,
             startRect: startRect,
             endRect: endRect,
             // startBorderRadius: startBorderRadius,
@@ -272,6 +276,7 @@ class _AnimatedMenuOverlay extends StatelessWidget {
 class _AnimatedMenuSheet extends StatefulWidget {
   const _AnimatedMenuSheet({
     required this.controller,
+    required this.closingNotifier,
     required this.startRect,
     required this.endRect,
     // required this.startBorderRadius,
@@ -287,6 +292,7 @@ class _AnimatedMenuSheet extends StatefulWidget {
   });
 
   final AnimationController controller;
+  final ValueNotifier<bool> closingNotifier;
   final Rect startRect;
   final Rect endRect;
   // final double startBorderRadius;
@@ -328,9 +334,13 @@ class _AnimatedMenuSheetState extends State<_AnimatedMenuSheet> {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: widget.controller,
+      animation: Listenable.merge([
+        widget.controller,
+        widget.closingNotifier,
+        ]),
       builder: (context, _) {
-        final isClosing = widget.controller.status == AnimationStatus.reverse;
+        // final isClosing = widget.controller.status == AnimationStatus.reverse;
+        final isClosing = widget.closingNotifier.value;
         final rect = isClosing ? widget.endRect : _rectAnimation.value!;
         // final radius = isClosing ? widget.endBorderRadius : _radiusAnimation.value;
         final alignment = isClosing ? widget.openAlignment : _alignmentAnimation.value;
