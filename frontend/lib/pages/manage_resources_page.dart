@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:frontend/colors.dart';
 import 'package:frontend/elements/add_resource_menu.dart';
 import 'package:frontend/elements/animated_menu.dart';
-import 'package:frontend/elements/cls_checkbox.dart';
-import 'package:frontend/elements/cls_textfield.dart';
+import 'package:frontend/elements/app_notify.dart';
 import 'package:frontend/elements/ios_like_clipper.dart';
-import 'package:frontend/elements/param_textfield.dart';
 import 'package:frontend/logic/service.dart';
 import 'package:frontend/txt_styles.dart';
 
@@ -161,7 +159,7 @@ class _ManageResourcesPageState extends State<ManageResourcesPage> with SingleTi
                         context: context,
                         anchorKey: _addResourceButtonKey,
                         width: 600,
-                        height: 535,
+                        height: 560,
                         backgroundColor: milkC,
                         preferredDirection: AnimatedMenuDirection.bottomRight,
                         shape: IOSLikeShape(30),

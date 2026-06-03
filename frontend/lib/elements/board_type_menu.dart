@@ -19,7 +19,7 @@ class BoardTypeMenu extends StatelessWidget {
       itemCount: types.length,
       itemBuilder: (context, index) {
         return Material(
-          color: selectedValue == types[index] ? accentGreenC : milkC,
+          color: selectedValue == types[index] ? salatC : milkC,
           child: InkWell(
             onTap: () {
               onChanged.call(types[index]);
@@ -29,8 +29,9 @@ class BoardTypeMenu extends StatelessWidget {
               height: 50,
               child: Row(
                 children: [
-                  SvgPicture.asset(iconPaths[index], width: 32, colorFilter: ColorFilter.mode(blackC, BlendMode.srcATop)),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 12),
+                  SvgPicture.asset(iconPaths[index], width: 24, colorFilter: ColorFilter.mode(blackC, BlendMode.srcATop)),
+                  const SizedBox(width: 10),
                   Text(types[index], style: TxtStyles.body.copyWith(color: blackC)),
                 ],
               ),

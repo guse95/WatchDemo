@@ -80,4 +80,17 @@ class HttpRequests {
       );
     });
   }
+
+  Future<http.Response> sendAddResourceRequest({required Map<String, dynamic> params}) async {
+    final accessToken = await AuthService().getAccessToken();
+    final reqBody = jsonEncode(params);
+    logMsg("D", "Send add resource request", reqBody);
+    final response = await http.post(
+      Uri.parse("$apiUrl/resources/admin/create"),
+      headers: {"Authorization": "Bearer $accessToken", "Content-Type": "application/json"},
+      body: reqBody,
+    );
+    logMsg("D", "Register request", "Code ${response.statusCode}. Body:\n${jsonDecode(response.body)}");
+    return response;
+  }
 }

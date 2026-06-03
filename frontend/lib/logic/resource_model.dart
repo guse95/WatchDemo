@@ -13,14 +13,17 @@ class Resource {
 
   final String? notebookOS;
   final String? notebookCPU;
-  final int? notebookScreensize;
+  final int? notebookDiagonal;
 
   final String? boardType;
   final int? boardHeight;
   final int? boardWidth;
 
-  final String? projectorResolution;
-  final String? projectorConnections;
+  final String? prjResolution;
+  final bool? prjHdmi;
+  final bool? prjDp;
+  final bool? prjVga;
+  final bool? prjDvi;
 
   Resource({
     required this.id,
@@ -35,12 +38,15 @@ class Resource {
     this.roomHasBoard,
     this.notebookOS,
     this.notebookCPU,
-    this.notebookScreensize,
+    this.notebookDiagonal,
     this.boardType,
     this.boardHeight,
     this.boardWidth,
-    this.projectorResolution,
-    this.projectorConnections,
+    this.prjResolution,
+    this.prjHdmi,
+    this.prjDp,
+    this.prjVga,
+    this.prjDvi,
   });
 
   factory Resource.fromJson(Map<String, dynamic> json) {

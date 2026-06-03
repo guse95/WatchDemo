@@ -176,10 +176,7 @@ class AnimatedMenu {
   }) {
     if (preferredDirection != AnimatedMenuDirection.auto) {
       return switch (preferredDirection) {
-        AnimatedMenuDirection.bottomLeft => const _ResolvedMenuDirection(
-          vertical: _MenuVertical.bottom,
-          horizontal: _MenuHorizontal.left,
-        ),
+        AnimatedMenuDirection.bottomLeft => const _ResolvedMenuDirection(vertical: _MenuVertical.bottom, horizontal: _MenuHorizontal.left),
         AnimatedMenuDirection.bottomCenter => const _ResolvedMenuDirection(
           vertical: _MenuVertical.bottom,
           horizontal: _MenuHorizontal.center,
@@ -188,31 +185,16 @@ class AnimatedMenu {
           vertical: _MenuVertical.bottom,
           horizontal: _MenuHorizontal.right,
         ),
-        AnimatedMenuDirection.topLeft => const _ResolvedMenuDirection(
-          vertical: _MenuVertical.top,
-          horizontal: _MenuHorizontal.left,
-        ),
-        AnimatedMenuDirection.topCenter => const _ResolvedMenuDirection(
-          vertical: _MenuVertical.top,
-          horizontal: _MenuHorizontal.center,
-        ),
-        AnimatedMenuDirection.topRight => const _ResolvedMenuDirection(
-          vertical: _MenuVertical.top,
-          horizontal: _MenuHorizontal.right,
-        ),
-        AnimatedMenuDirection.auto => const _ResolvedMenuDirection(
-          vertical: _MenuVertical.bottom,
-          horizontal: _MenuHorizontal.right,
-        ),
+        AnimatedMenuDirection.topLeft => const _ResolvedMenuDirection(vertical: _MenuVertical.top, horizontal: _MenuHorizontal.left),
+        AnimatedMenuDirection.topCenter => const _ResolvedMenuDirection(vertical: _MenuVertical.top, horizontal: _MenuHorizontal.center),
+        AnimatedMenuDirection.topRight => const _ResolvedMenuDirection(vertical: _MenuVertical.top, horizontal: _MenuHorizontal.right),
+        AnimatedMenuDirection.auto => const _ResolvedMenuDirection(vertical: _MenuVertical.bottom, horizontal: _MenuHorizontal.right),
       };
     }
 
     final openDown = spaceBelow >= menuHeight || spaceBelow >= spaceAbove;
 
-    return _ResolvedMenuDirection(
-      vertical: openDown ? _MenuVertical.bottom : _MenuVertical.top,
-      horizontal: _MenuHorizontal.right,
-    );
+    return _ResolvedMenuDirection(vertical: openDown ? _MenuVertical.bottom : _MenuVertical.top, horizontal: _MenuHorizontal.right);
   }
 }
 
@@ -295,6 +277,7 @@ class _AnimatedMenuSheet extends StatefulWidget {
   final ValueNotifier<bool> closingNotifier;
   final Rect startRect;
   final Rect endRect;
+
   // final double startBorderRadius;
   // final double endBorderRadius;
   final ShapeBorder? shape;
@@ -312,6 +295,7 @@ class _AnimatedMenuSheet extends StatefulWidget {
 
 class _AnimatedMenuSheetState extends State<_AnimatedMenuSheet> {
   late final Animation<Rect?> _rectAnimation;
+
   // late final Animation<double> _radiusAnimation;
   late final Animation<double> _contentOpacityAnimation;
   late final Animation<Alignment> _alignmentAnimation;
@@ -334,10 +318,7 @@ class _AnimatedMenuSheetState extends State<_AnimatedMenuSheet> {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: Listenable.merge([
-        widget.controller,
-        widget.closingNotifier,
-        ]),
+      animation: Listenable.merge([widget.controller, widget.closingNotifier]),
       builder: (context, _) {
         // final isClosing = widget.controller.status == AnimationStatus.reverse;
         final isClosing = widget.closingNotifier.value;
@@ -355,15 +336,18 @@ class _AnimatedMenuSheetState extends State<_AnimatedMenuSheet> {
             opacity: sheetOpacity.clamp(0.0, 1.0),
             child: Material(
               color: widget.backgroundColor,
-              elevation: 6,
-              // borderRadius: BorderRadius.circular(radius),
+              elevation: widget.elevation,
               shape: widget.shape,
               clipBehavior: Clip.antiAlias,
-              child: Align(
+              child: OverflowBox(
                 alignment: alignment,
+                minWidth: widget.endRect.width,
+                maxWidth: widget.endRect.width,
+                minHeight: widget.endRect.height,
+                maxHeight: widget.endRect.height,
                 child: SizedBox(
-                  width: rect.width,
-                  height: rect.height,
+                  width: widget.endRect.width,
+                  height: widget.endRect.height,
                   child: Padding(
                     padding: widget.padding,
                     child: isClosing
