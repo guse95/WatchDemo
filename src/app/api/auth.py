@@ -13,7 +13,7 @@ import secrets
 import hashlib
 
 from app.db import get_db, User, Sessions
-from app.features.CodeStorage import saveCode, verifyCode
+from app.features.CodeStorage import saveCode, verifyCode, CodeStatus
 from app.features.JWTChecker import get_current_user
 from app.models.AuthModel import RegistrationData, AuthTokens, LoginData, WhoisInfo
 
@@ -44,7 +44,7 @@ def hash_token(token: str):
     return hashlib.sha256(token.encode()).hexdigest()
 
 
-router = APIRouter()
+router = APIRouter(tags=["Authorization"], prefix="/auth")
 pwd_context = PasswordHash([BcryptHasher()])
 
 def hash_password(password: str):
@@ -212,7 +212,7 @@ async def check_email(email: str, db: AsyncSession = Depends(get_db)):
             password=email_password,
             use_tls=True,
         )
-        saveCode(email, code)
+        await saveCode(email, code)
         return {"status": "success", "message": "Verification code sent to email"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Mail error: {e}")
@@ -220,6 +220,10 @@ async def check_email(email: str, db: AsyncSession = Depends(get_db)):
 
 @router.get("/check-code", status_code=200)
 async def check_email(email: str, code: str):
-    if not verifyCode(email, code):
-        raise HTTPException(status_code=400, detail=f"Wrong code")
-    return {"status": "success", "message": "Verification passed"}
+    match (await verifyCode(email, code)):
+        case CodeStatus.CORRECT:
+            return {"status": "success", "message": "Verification passed"}
+        case CodeStatus.WRONG:
+            raise HTTPException(status_code=400, detail=f"Wrong code")
+        case CodeStatus.EXPIRED:
+            raise HTTPException(status_code=410, detail=f"Expired code")

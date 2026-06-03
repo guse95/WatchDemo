@@ -26,6 +26,6 @@ app.add_middleware(
 )
 
 app.include_router(ping.router)
-app.include_router(auth.router, prefix="/auth")
-app.include_router(admin.router, prefix="/resources/admin")
-app.include_router(user.router, prefix="/resources/user")
+app.include_router(auth.router)
+app.include_router(admin.router)
+app.include_router(user.router)

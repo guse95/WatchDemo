@@ -6,7 +6,7 @@ from app.db import get_db, Resource
 from app.features.JWTChecker import get_current_user
 from app.models.RegistrationModel import ResourceDTO
 
-router = APIRouter()
+router = APIRouter(tags=["User"], prefix="/resources/user")
 
 @router.get("/all", response_model=list[ResourceDTO])
 async def get_all_resources(start_ind: int, limit: int, user_id: int = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
