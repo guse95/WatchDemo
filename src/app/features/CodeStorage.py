@@ -4,6 +4,7 @@ from enum import Enum
 
 from redis.asyncio import Redis
 
+from app.models.CodeStatus import CodeStatus
 
 redis_password = os.getenv("REDIS_PASSWORD")
 
@@ -15,10 +16,6 @@ redis = Redis(
     decode_responses=True,
 )
 
-class CodeStatus (Enum):
-    CORRECT = "correct"
-    WRONG = "wrong"
-    EXPIRED = "expired"
 
 async def saveCode(email: str, code:str):
     return await redis.set(email, code, ex=timedelta(minutes=5))
