@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    async with engine.begin() as conn:
+    async with engine.connect() as conn:
         print("Successfully connected to the database")
     yield
     await engine.dispose()
