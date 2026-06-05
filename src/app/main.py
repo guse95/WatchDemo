@@ -8,11 +8,18 @@ from app.db import engine
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.features.GarbageCollector import start_scheduler, stop_scheduler
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    async with engine.begin() as conn:
+    async with engine.connect() as conn:
         print("Successfully connected to the database")
+    start_scheduler()
+
     yield
+
+    stop_scheduler()
     await engine.dispose()
 
 app = FastAPI(lifespan=lifespan)
@@ -26,6 +33,6 @@ app.add_middleware(
 )
 
 app.include_router(ping.router)
-app.include_router(auth.router, prefix="/auth")
-app.include_router(admin.router, prefix="/resources/admin")
-app.include_router(user.router, prefix="/resources/user")
+app.include_router(auth.router)
+app.include_router(admin.router)
+app.include_router(user.router)

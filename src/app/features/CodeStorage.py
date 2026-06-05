@@ -1,31 +1,31 @@
-import dataclasses
-from dataclasses import field, dataclass
-from datetime import datetime, timedelta
+import os
+from datetime import timedelta
+from enum import Enum
 
-@dataclass
-class CodeEntry:
-    code: str
-    createdAt: datetime = field(default_factory=datetime.now)
+from redis.asyncio import Redis
 
-    def isExpired(self) -> bool:
-        return datetime.now() - self.createdAt > timedelta(minutes=5)
+from app.models.CodeStatus import CodeStatus
 
-CodeStorage: dict[str, CodeEntry] = {}
+redis_password = os.getenv("REDIS_PASSWORD")
 
-def saveCode(email: str, code:str):
-    CodeStorage[email] = CodeEntry(code)
+redis = Redis(
+    host="redis",
+    port=6379,
+    db=0,
+    password=redis_password,
+    decode_responses=True,
+)
 
-def verifyCode(email: str, inputCode: str) -> bool:
-    entry = CodeStorage.get(email)
-    if entry is None:
-        return False
 
-    if entry.isExpired():
-        del CodeStorage[email]
-        return False
+async def saveCode(email: str, code:str):
+    return await redis.set(email, code, ex=timedelta(minutes=5))
 
-    if entry.code == inputCode:
-        del CodeStorage[email]
-        return True
-
-    return False
+async def verifyCode(email: str, inputCode: str) -> CodeStatus:
+    code = await redis.get(email)
+    match code:
+        case None:
+            return CodeStatus.EXPIRED
+        case c if c == inputCode:
+            return CodeStatus.CORRECT
+        case _:
+            return CodeStatus.WRONG

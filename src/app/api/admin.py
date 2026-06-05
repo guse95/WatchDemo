@@ -6,7 +6,7 @@ from app.db import get_db, Resource
 from app.features.JWTChecker import get_current_user
 from app.models.RegistrationModel import ResourceDTO, ResourceData, EditResourceData
 
-router = APIRouter()
+router = APIRouter(tags=["Admin"], prefix="/resources/admin")
 
 @router.post("/create", response_model=ResourceDTO)
 async def create_resource(resource: ResourceData, user_id: int = Depends(get_current_user),  db: AsyncSession = Depends(get_db)):

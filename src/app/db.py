@@ -1,9 +1,11 @@
 import datetime
 import os
-from sqlalchemy import (MetaData, String, Text, ForeignKey, Enum, DateTime, JSON)
+from sqlalchemy import (MetaData, String, Text, ForeignKey, Enum, DateTime, JSON, Index)
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
+
+from app.models.OperationStatus import OperationStatus
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -18,7 +20,7 @@ class User(Base):
     __tablename__ = "user"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    email: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
     username: Mapped[str | None] = mapped_column(String(50))
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     pass_level: Mapped[int] = mapped_column(default=0, nullable=False)
@@ -36,7 +38,7 @@ class Resource(Base):
     __tablename__ = "resource"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(50), nullable=False)
     type: Mapped[str] = mapped_column(String(50), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
 
@@ -51,12 +53,16 @@ class Resource(Base):
 class OperationHistory(Base):
     __tablename__ = "operation_history"
 
+    __table_args__ = (
+        Index("idx_operation_dates", "booked_from", "booked_to"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    booker_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
-    resource_id: Mapped[int] = mapped_column(ForeignKey("resource.id"), nullable=False)
-    operation_type: Mapped[str] = mapped_column(Enum("book", "cancel", name="operation_type_enum"), nullable=False)
+    booker_id: Mapped[int] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"), nullable=False, index=True)
+    resource_id: Mapped[int] = mapped_column(ForeignKey("resource.id", ondelete="CASCADE"), nullable=False, index=True)
+    status: Mapped[OperationStatus] = mapped_column(Enum(OperationStatus), default=OperationStatus.ACTIVE, nullable=False)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=func.now(), nullable=False)
+    last_update_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=func.now(), nullable=False)
     booked_from: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False)
     booked_to: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False)
 
@@ -71,7 +77,7 @@ class Sessions(Base):
     __tablename__ = "sessions"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"), nullable=False, index=True)
     refresh_token_hash: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False)
     expires_at: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False)
