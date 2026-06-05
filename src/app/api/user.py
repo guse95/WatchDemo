@@ -1,13 +1,15 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.openapi.models import Operation
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db, Resource, OperationHistory
 from app.features.JWTChecker import get_current_user
 from app.models.OperationStatus import OperationStatus
+from app.models.OperationDTO import OperationDTO
 from app.models.RegistrationModel import ResourceDTO
 
 router = APIRouter(tags=["User"], prefix="/resources/user")
@@ -97,25 +99,39 @@ async def canscel_booking(
         "booked_to": operation.booked_to,
     }
 
+@router.get("/book/my", response_model=list[OperationDTO])
+async def get_my_bookings(
+        time_from: datetime = datetime.now().replace(hour=0, minute=0, second=0),
+        time_to: datetime = datetime.now().replace(hour=23, minute=59, second=59),
+        user_id: int = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db)
+):
+    bookings = await db.scalars(
+        select(OperationHistory)
+        .where(
+            OperationHistory.booker_id == user_id,
+            OperationHistory.status == OperationStatus.ACTIVE,
+            OperationHistory.booked_from < time_to,
+            OperationHistory.booked_to > time_from
+        )
+    )
+    return bookings.all()
+
 @router.get("/book/{resource_id}", response_model=list[OperationDTO])
 async def get_resource_bookings(
         resource_id: int,
+        time_from: datetime = datetime.now().replace(hour=0, minute=0, second=0),
+        time_to: datetime = datetime.now().replace(hour=23, minute=59, second=59),
         user_id: int = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
     bookings = await db.scalars(
         select(OperationHistory)
-        .where(OperationHistory.resource_id == resource_id)
-    )
-    return (bookings.all()
-
-@router.get("/book", response_model=list[OperationDTO]))
-async def get_my_bookings(
-        user_id: int = Depends(get_current_user),
-        db: AsyncSession = Depends(get_db)
-):
-    bookings = await db.scalars(
-        select(OperationHistory)
-        .where(OperationHistory.booker_id == user_id)
+        .where(
+            OperationHistory.resource_id == resource_id,
+            OperationHistory.status == OperationStatus.ACTIVE,
+            OperationHistory.booked_from < time_to,
+            OperationHistory.booked_to > time_from
+        )
     )
     return bookings.all()
