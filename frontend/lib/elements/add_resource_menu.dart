@@ -127,7 +127,7 @@ class _AddResourceMenuState extends State<AddResourceMenu> with SingleTickerProv
         params["extra_attributes"]["room-has-board"] = _isBoardChecked.toString();
         break;
       case 1:
-        params["type"] = "notebook";
+        params["type"] = "laptop";
         params["extra_attributes"]["notebook-os"] = _ntbOsController.text;
         params["extra_attributes"]["notebook-cpu"] = _ntbCpuController.text;
         params["extra_attributes"]["notebook-diagonal"] = _ntbDiagController.text;
@@ -144,6 +144,7 @@ class _AddResourceMenuState extends State<AddResourceMenu> with SingleTickerProv
         params["extra_attributes"]["projector-dp"] = _isDpChecked.toString();
         params["extra_attributes"]["projector-vga"] = _isVgaChecked.toString();
         params["extra_attributes"]["projector-dvi"] = _isDviChecked.toString();
+        params["extra_attributes"]["projector-resolution"] = _prjResolutionController.text;
         break;
       default:
         logMsg("E", "Send add resource request", "Unsupported resource type - $selectedIndex");

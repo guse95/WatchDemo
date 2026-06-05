@@ -2,16 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:frontend/colors.dart';
 import 'package:frontend/elements/add_resource_menu.dart';
 import 'package:frontend/elements/animated_menu.dart';
-import 'package:frontend/elements/app_notify.dart';
 import 'package:frontend/elements/ios_like_clipper.dart';
+import 'package:frontend/logic/http_requests.dart';
+import 'package:frontend/logic/resource_model.dart';
 import 'package:frontend/logic/service.dart';
 import 'package:frontend/txt_styles.dart';
 
 class ResourceRow extends StatelessWidget {
-  const ResourceRow({super.key});
+  final Resource resource;
+
+  const ResourceRow({super.key, required this.resource});
 
   @override
   Widget build(BuildContext context) {
+    Map<String, String> imagePaths = {
+      "room": "assets/images/back.jpg",
+      "laptop": "assets/images/notebook.png",
+      "board": "assets/images/board.png",
+      "projector": "assets/images/projector.png",
+    };
+
     return Container(
       height: 70,
       decoration: BoxDecoration(color: Colors.white),
@@ -25,16 +35,16 @@ class ResourceRow extends StatelessWidget {
               height: 54,
               width: 80,
               decoration: BoxDecoration(
-                image: DecorationImage(image: AssetImage("assets/images/back.jpg"), fit: BoxFit.cover),
+                image: DecorationImage(image: AssetImage(imagePaths[resource.type]!), fit: BoxFit.cover),
               ),
             ),
           ),
           const SizedBox(width: 18),
           SizedBox(
             width: 260,
-            child: Text("Переговорная альфа", style: TxtStyles.bodyMedium.copyWith(color: blackC)),
+            child: Text(resource.name, style: TxtStyles.bodyMedium.copyWith(color: blackC)),
           ),
-          Text("Комната", style: TxtStyles.body.copyWith(color: lightBlackC)),
+          Text(resource.type, style: TxtStyles.body.copyWith(color: lightBlackC)),
           const Spacer(),
           Material(
             color: Colors.transparent,
@@ -83,10 +93,16 @@ class ManageResourcesPage extends StatefulWidget {
 
 class _ManageResourcesPageState extends State<ManageResourcesPage> with SingleTickerProviderStateMixin {
   final GlobalKey _addResourceButtonKey = GlobalKey();
-
   final ScrollController _scrollController = ScrollController();
   late final TabController _tabController;
   int selectedIndex = 0;
+
+  final List<Resource> _resources = [];
+  bool _isLoading = false;
+  bool _hasMore = true;
+  int _page = 0;
+
+  static const int _limit = 24;
 
   final List<String> _tabNames = ["Все", "Комнаты", "Ноутбуки", "Доски", "Проекторы"];
 
@@ -95,7 +111,6 @@ class _ManageResourcesPageState extends State<ManageResourcesPage> with SingleTi
     super.initState();
 
     _tabController = TabController(length: _tabNames.length, vsync: this);
-
     _tabController.addListener(() {
       if (_tabController.index != selectedIndex) {
         setState(() {
@@ -103,6 +118,43 @@ class _ManageResourcesPageState extends State<ManageResourcesPage> with SingleTi
         });
       }
     });
+
+    _loadResources();
+
+    _scrollController.addListener(() {
+      final position = _scrollController.position;
+
+      if (position.pixels >= position.maxScrollExtent - 500) {
+        _loadResources();
+      }
+    });
+  }
+
+  Future<void> _loadResources() async {
+    if (_isLoading || !_hasMore) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final newResources = await HttpRequests().fetchResources(page: _page, limit: _limit);
+
+      setState(() {
+        _resources.addAll(newResources);
+        _page++;
+
+        if (newResources.length < _limit) {
+          _hasMore = false;
+        }
+      });
+    } catch (e) {
+      logMsg("E", "Load resources", "Error loading resources: $e");
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -113,6 +165,8 @@ class _ManageResourcesPageState extends State<ManageResourcesPage> with SingleTi
 
   @override
   Widget build(BuildContext context) {
+    final itemCount = _resources.length + (_hasMore ? 1 : 0);
+
     return Padding(
       padding: const EdgeInsets.all(40),
       child: Column(
@@ -234,9 +288,12 @@ class _ManageResourcesPageState extends State<ManageResourcesPage> with SingleTi
                           thumbVisibility: true,
                           child: ListView.separated(
                             controller: _scrollController,
-                            itemCount: 10,
+                            itemCount: itemCount,
                             itemBuilder: (context, index) {
-                              return ResourceRow();
+                              if (index >= _resources.length) {
+                                return const Center(child: CircularProgressIndicator());
+                              }
+                              return ResourceRow(resource: _resources[index]);
                             },
                             separatorBuilder: (context, index) {
                               return Divider(height: 1, thickness: 1, color: darkMilkC);
