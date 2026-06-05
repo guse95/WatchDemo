@@ -8,11 +8,18 @@ from app.db import engine
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.features.GarbageCollector import start_scheduler, stop_scheduler
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     async with engine.connect() as conn:
         print("Successfully connected to the database")
+    start_scheduler()
+
     yield
+
+    stop_scheduler()
     await engine.dispose()
 
 app = FastAPI(lifespan=lifespan)
