@@ -62,7 +62,7 @@ async def update_resource(resource_data: EditResourceData, user_id: int = Depend
     await db.refresh(resource)
     return resource
 
-@router.delete("/delete", response_model=ResourceDTO)
+@router.delete("/delete")
 async def delete_resource(resource_id: int, user_id: int = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     resource = await db.get(Resource, resource_id)
 
