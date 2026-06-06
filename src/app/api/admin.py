@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db import get_db, Resource
+from app.db import get_db, Resource, OperationHistory
 from app.features.JWTChecker import get_current_user
 from app.models.RegistrationModel import ResourceDTO, ResourceData, EditResourceData
 
@@ -68,6 +68,8 @@ async def delete_resource(resource_id: int, user_id: int = Depends(get_current_u
 
     if resource is None:
         raise HTTPException(status_code=404, detail="Resource not found")
+
+    await db.execute(delete(OperationHistory).where(OperationHistory.resource_id == resource_id))
 
     await db.delete(resource)
     await db.commit()
