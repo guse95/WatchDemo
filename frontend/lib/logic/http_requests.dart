@@ -75,13 +75,14 @@ class HttpRequests {
     } else {
       response = await http.get(
         Uri.parse(
-          "$apiUrl/resources/user/",
-        ).replace(queryParameters: {"resource_type": type, "start_ind": (page * limit).toString(), "limit": (limit).toString()}),
+          "$apiUrl/resources/user/$type",
+        ).replace(queryParameters: {"start_ind": (page * limit).toString(), "limit": (limit).toString()}),
         headers: {"Authorization": "Bearer $accessToken"},
       );
     }
 
     final body = jsonDecode(response.body);
+    logMsg("D", "Fetch resources", "Fetched ${body.length} resources.");
     return List.generate(body.length, (index) {
       final data = body[index];
       final res = Resource.fromJson(data);
@@ -97,6 +98,29 @@ class HttpRequests {
       Uri.parse("$apiUrl/resources/admin/create"),
       headers: {"Authorization": "Bearer $accessToken", "Content-Type": "application/json"},
       body: reqBody,
+    );
+    logMsg("D", "Register request", "Code ${response.statusCode}. Body:\n${jsonDecode(response.body)}");
+    return response;
+  }
+
+  Future<http.Response> sendUpdateResourceRequest({required Map<String, dynamic> params}) async {
+    final accessToken = await AuthService().getAccessToken();
+    final reqBody = jsonEncode(params);
+    logMsg("D", "Send add resource request", reqBody);
+    final response = await http.put(
+      Uri.parse("$apiUrl/resources/admin/update"),
+      headers: {"Authorization": "Bearer $accessToken", "Content-Type": "application/json"},
+      body: reqBody,
+    );
+    logMsg("D", "Register request", "Code ${response.statusCode}. Body:\n${jsonDecode(response.body)}");
+    return response;
+  }
+
+  Future<http.Response> sendDeleteResourceRequest({required int id}) async {
+    final accessToken = await AuthService().getAccessToken();
+    final response = await http.delete(
+      Uri.parse("$apiUrl/resources/admin/delete/$id"),
+      headers: {"Authorization": "Bearer $accessToken"},
     );
     logMsg("D", "Register request", "Code ${response.statusCode}. Body:\n${jsonDecode(response.body)}");
     return response;

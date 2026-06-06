@@ -2,16 +2,39 @@ import 'package:flutter/material.dart';
 import 'package:frontend/colors.dart';
 import 'package:frontend/elements/add_resource_menu.dart';
 import 'package:frontend/elements/animated_menu.dart';
+import 'package:frontend/elements/app_notify.dart';
+import 'package:frontend/elements/confirm_action_dialog.dart';
 import 'package:frontend/elements/ios_like_clipper.dart';
 import 'package:frontend/logic/http_requests.dart';
 import 'package:frontend/logic/resource_model.dart';
 import 'package:frontend/logic/service.dart';
 import 'package:frontend/txt_styles.dart';
 
-class ResourceRow extends StatelessWidget {
+class ResourceRow extends StatefulWidget {
   final Resource resource;
+  final Future<void> Function() onResourceEdited;
 
-  const ResourceRow({super.key, required this.resource});
+  const ResourceRow({super.key, required this.resource, required this.onResourceEdited});
+
+  @override
+  State<ResourceRow> createState() => _ResourceRowState();
+}
+
+class _ResourceRowState extends State<ResourceRow> {
+  final GlobalKey _editButtonKey = GlobalKey();
+  final GlobalKey _deleteButtonKey = GlobalKey();
+
+  Future<void> _deleteResource() async {
+    final r = await HttpRequests().sendDeleteResourceRequest(id: widget.resource.id);
+    if (r.statusCode == 200) {
+      await widget.onResourceEdited();
+      if (!mounted) return;
+      AppNotify.show(context, message: "Ресурс удален", type: NotifyType.success);
+    } else {
+      if (!mounted) return;
+      AppNotify.show(context, message: "Не удалось удалить ресурс", type: NotifyType.success);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,6 +44,8 @@ class ResourceRow extends StatelessWidget {
       "board": "assets/images/board.png",
       "projector": "assets/images/projector.png",
     };
+
+    final Map<String, String> typeToName = {"room": "Комната", "laptop": "Ноутбук", "board": "Доска", "projector": "Проектор"};
 
     return Container(
       height: 70,
@@ -35,18 +60,19 @@ class ResourceRow extends StatelessWidget {
               height: 54,
               width: 80,
               decoration: BoxDecoration(
-                image: DecorationImage(image: AssetImage(imagePaths[resource.type]!), fit: BoxFit.cover),
+                image: DecorationImage(image: AssetImage(imagePaths[widget.resource.type]!), fit: BoxFit.cover),
               ),
             ),
           ),
           const SizedBox(width: 18),
           SizedBox(
             width: 260,
-            child: Text(resource.name, style: TxtStyles.bodyMedium.copyWith(color: blackC)),
+            child: Text(widget.resource.name, style: TxtStyles.bodyMedium.copyWith(color: blackC)),
           ),
-          Text(resource.type, style: TxtStyles.body.copyWith(color: lightBlackC)),
+          Text(typeToName[widget.resource.type]!, style: TxtStyles.body.copyWith(color: lightBlackC)),
           const Spacer(),
           Material(
+            key: _editButtonKey,
             color: Colors.transparent,
             shape: const CircleBorder(),
             clipBehavior: Clip.antiAlias,
@@ -56,6 +82,18 @@ class ResourceRow extends StatelessWidget {
               child: InkWell(
                 onTap: () {
                   logMsg("D", "Manage resources", "Tapped edit.");
+                  AnimatedMenu.show(
+                    context: context,
+                    anchorKey: _editButtonKey,
+                    width: 600,
+                    height: 560,
+                    backgroundColor: milkC,
+                    preferredDirection: AnimatedMenuDirection.bottomRight,
+                    shape: IOSLikeShape(30),
+                    builder: (context, close) {
+                      return AddResourceMenu(resource: widget.resource, onClose: close, onResourceChange: widget.onResourceEdited);
+                    },
+                  );
                 },
                 child: Icon(Icons.edit_rounded, color: lightBlackC, size: 30),
               ),
@@ -63,6 +101,7 @@ class ResourceRow extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Material(
+            key: _deleteButtonKey,
             color: Colors.transparent,
             shape: const CircleBorder(),
             clipBehavior: Clip.antiAlias,
@@ -72,6 +111,23 @@ class ResourceRow extends StatelessWidget {
               child: InkWell(
                 onTap: () {
                   logMsg("D", "Manage resources", "Tapped delete.");
+                  AnimatedMenu.show(
+                    context: context,
+                    anchorKey: _editButtonKey,
+                    width: 250,
+                    height: 140,
+                    backgroundColor: milkC,
+                    preferredDirection: AnimatedMenuDirection.bottomCenter,
+                    shape: IOSLikeShape(30),
+                    builder: (context, close) {
+                      return ConfirmActionDialog(
+                        label: "Удалить?",
+                        msg: "Действительно удалить этот ресурс?",
+                        onClose: close,
+                        onResourceChange: _deleteResource,
+                      );
+                    },
+                  );
                 },
                 child: Icon(Icons.delete_outline, color: Colors.red, size: 30),
               ),
@@ -105,6 +161,7 @@ class _ManageResourcesPageState extends State<ManageResourcesPage> with SingleTi
   static const int _limit = 24;
 
   final List<String> _tabNames = ["Все", "Комнаты", "Ноутбуки", "Доски", "Проекторы"];
+  final List<String?> _resourceTypes = [null, "room", "laptop", "board", "projector"];
 
   @override
   void initState() {
@@ -116,6 +173,11 @@ class _ManageResourcesPageState extends State<ManageResourcesPage> with SingleTi
         setState(() {
           selectedIndex = _tabController.index;
         });
+        _page = 0;
+        _isLoading = false;
+        _hasMore = true;
+        _resources.clear();
+        _loadResources();
       }
     });
 
@@ -138,7 +200,8 @@ class _ManageResourcesPageState extends State<ManageResourcesPage> with SingleTi
     });
 
     try {
-      final newResources = await HttpRequests().fetchResources(page: _page, limit: _limit);
+      final selectedResourceType = _resourceTypes[selectedIndex];
+      final newResources = await HttpRequests().fetchResources(page: _page, limit: _limit, type: selectedResourceType);
 
       setState(() {
         _resources.addAll(newResources);
@@ -155,6 +218,17 @@ class _ManageResourcesPageState extends State<ManageResourcesPage> with SingleTi
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _reloadResources() async {
+    setState(() {
+      _resources.clear();
+      _page = 0;
+      _hasMore = true;
+      _isLoading = false;
+    });
+
+    await _loadResources();
   }
 
   @override
@@ -218,7 +292,7 @@ class _ManageResourcesPageState extends State<ManageResourcesPage> with SingleTi
                         preferredDirection: AnimatedMenuDirection.bottomRight,
                         shape: IOSLikeShape(30),
                         builder: (context, close) {
-                          return AddResourceMenu(onClose: close);
+                          return AddResourceMenu(onClose: close, onResourceChange: _reloadResources);
                         },
                       );
                     },
@@ -291,9 +365,14 @@ class _ManageResourcesPageState extends State<ManageResourcesPage> with SingleTi
                             itemCount: itemCount,
                             itemBuilder: (context, index) {
                               if (index >= _resources.length) {
-                                return const Center(child: CircularProgressIndicator());
+                                return const Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.all(12),
+                                    child: CircularProgressIndicator(color: accentGreenC),
+                                  ),
+                                );
                               }
-                              return ResourceRow(resource: _resources[index]);
+                              return ResourceRow(resource: _resources[index], onResourceEdited: _reloadResources);
                             },
                             separatorBuilder: (context, index) {
                               return Divider(height: 1, thickness: 1, color: darkMilkC);

@@ -6,11 +6,12 @@ import 'package:frontend/elements/cls_checkbox.dart';
 import 'package:frontend/elements/cls_textfield.dart';
 import 'package:frontend/elements/param_textfield.dart';
 import 'package:frontend/logic/http_requests.dart';
+import 'package:frontend/logic/resource_model.dart';
 import 'package:frontend/logic/service.dart';
 import 'package:frontend/txt_styles.dart';
-
 import 'animated_menu.dart';
 import 'ios_like_clipper.dart';
+import 'package:http/http.dart' as http;
 
 class ParamCheck extends StatelessWidget {
   final bool check;
@@ -33,8 +34,10 @@ class ParamCheck extends StatelessWidget {
 
 class AddResourceMenu extends StatefulWidget {
   final VoidCallback onClose;
+  final Future<void> Function() onResourceChange;
+  final Resource? resource;
 
-  const AddResourceMenu({super.key, required this.onClose});
+  const AddResourceMenu({super.key, required this.onClose, required this.onResourceChange, this.resource});
 
   @override
   State<AddResourceMenu> createState() => _AddResourceMenuState();
@@ -45,6 +48,7 @@ class _AddResourceMenuState extends State<AddResourceMenu> with SingleTickerProv
   int selectedIndex = 0;
 
   final List<String> _tabNames = ["Комната", "Ноутбук", "Доска", "Проектор"];
+  final Map<String, int> _tabnameToIndex = {"room": 0, "laptop": 1, "board": 2, "projector": 3};
 
   final TextEditingController _nameController = TextEditingController();
   String? _nameError;
@@ -74,19 +78,55 @@ class _AddResourceMenuState extends State<AddResourceMenu> with SingleTickerProv
   bool _isVgaChecked = false;
   bool _isDviChecked = false;
 
+  late Resource _resourceData;
+
   @override
   void initState() {
     super.initState();
 
-    _tabController = TabController(length: _tabNames.length, vsync: this);
+    if (widget.resource != null) {
+      _resourceData = widget.resource!;
+      _tabController = TabController(length: _tabNames.length, vsync: this, initialIndex: _tabnameToIndex[_resourceData.type]!);
+      setState(() {
+        selectedIndex = _tabnameToIndex[_resourceData.type]!;
+      });
 
-    _tabController.addListener(() {
-      if (_tabController.index != selectedIndex) {
-        setState(() {
-          selectedIndex = _tabController.index;
-        });
+      _nameController.text = _resourceData.name;
+      _descriptionController.text = _resourceData.description;
+
+      if (_resourceData.type == "room") {
+        _capacityController.text = (_resourceData.roomCapacity!).toString();
+        _areaController.text = (_resourceData.roomArea!).toString();
+        _isProjectorChecked = _resourceData.roomHasProjector!;
+        _isScreenChecked = _resourceData.roomHasScreen!;
+        _isTvChecked = _resourceData.roomHasTV!;
+        _isBoardChecked = _resourceData.roomHasBoard!;
+      } else if (_resourceData.type == "laptop") {
+        _ntbOsController.text = _resourceData.notebookOS!;
+        _ntbCpuController.text = _resourceData.notebookCPU!;
+        _ntbDiagController.text = (_resourceData.notebookDiagonal!).toString();
+      } else if (_resourceData.type == "board") {
+        _brdType = _resourceData.boardType!;
+        _brdWidthController.text = (_resourceData.boardWidth!).toString();
+        _brdHeightController.text = (_resourceData.boardHeight!).toString();
+      } else if (_resourceData.type == "projector") {
+        // print("res: ${_resourceData.prjResolution}, hdmi: ${_resourceData.prjHdmi}, dp: ${_resourceData.prjDp}, vga: ${_resourceData.prjVga}, dvi: ${_resourceData.prjDvi}");
+        _prjResolutionController.text = _resourceData.prjResolution!;
+        _isHdmiChecked = _resourceData.prjHdmi!;
+        _isDpChecked = _resourceData.prjDp!;
+        _isVgaChecked = _resourceData.prjVga!;
+        _isDviChecked = _resourceData.prjDvi!;
       }
-    });
+    } else {
+      _tabController = TabController(length: _tabNames.length, vsync: this);
+      _tabController.addListener(() {
+        if (_tabController.index != selectedIndex) {
+          setState(() {
+            selectedIndex = _tabController.index;
+          });
+        }
+      });
+    }
   }
 
   @override
@@ -95,7 +135,7 @@ class _AddResourceMenuState extends State<AddResourceMenu> with SingleTickerProv
     super.dispose();
   }
 
-  Future<void> _sendAddRequest() async {
+  Future<void> _sendRequest() async {
     bool hasError = false;
     if (_nameController.text.isEmpty) {
       hasError = true;
@@ -151,14 +191,22 @@ class _AddResourceMenuState extends State<AddResourceMenu> with SingleTickerProv
         break;
     }
 
-    final r = await HttpRequests().sendAddResourceRequest(params: params);
-    widget.onClose();
-
+    http.Response r;
+    if (widget.resource == null) {
+      r = await HttpRequests().sendAddResourceRequest(params: params);
+    } else {
+      params["id"] = _resourceData.id;
+      r = await HttpRequests().sendUpdateResourceRequest(params: params);
+    }
     if (r.statusCode == 200) {
+      await widget.onResourceChange();
+      if (!mounted) return;
       AppNotify.show(context, message: "Ресурс добавлен!", type: NotifyType.success);
     } else {
+      if (!mounted) return;
       AppNotify.show(context, message: "Ошибка добавления ресурса.", type: NotifyType.error);
     }
+    widget.onClose();
   }
 
   @override
@@ -170,7 +218,7 @@ class _AddResourceMenuState extends State<AddResourceMenu> with SingleTickerProv
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Добавить ресурс", style: TxtStyles.h2.copyWith(color: darkGreenC)),
+            Text(widget.resource == null ? "Добавить ресурс" : "Изменить ресурс", style: TxtStyles.h2.copyWith(color: darkGreenC)),
             const SizedBox(height: 12),
             TabBar(
               controller: _tabController,
@@ -250,6 +298,7 @@ class _AddResourceMenuState extends State<AddResourceMenu> with SingleTickerProv
                             controller: _capacityController,
                             requiredField: true,
                             maxLength: 4,
+                            digitsOnly: true,
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -262,6 +311,7 @@ class _AddResourceMenuState extends State<AddResourceMenu> with SingleTickerProv
                             controller: _areaController,
                             requiredField: true,
                             maxLength: 4,
+                            digitsOnly: true,
                           ),
                         ),
                       ],
@@ -457,16 +507,16 @@ class _AddResourceMenuState extends State<AddResourceMenu> with SingleTickerProv
                   child: InkWell(
                     onTap: () async {
                       logMsg("D", "Manage resources", "Tapped - internal add resource.");
-                      await _sendAddRequest();
+                      await _sendRequest();
                     },
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const SizedBox(width: 10),
-                        Icon(Icons.add, color: milkC, size: 25),
+                        Icon(widget.resource == null ? Icons.add : Icons.edit_rounded, color: milkC, size: 25),
                         const SizedBox(width: 4),
                         Text(
-                          "Добавить",
+                          widget.resource == null ? "Добавить" : "Изменить",
                           style: TxtStyles.bodyMedium.copyWith(color: milkC, fontWeight: FontWeight.w500),
                         ),
                         const SizedBox(width: 18),
