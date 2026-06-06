@@ -1,17 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/colors.dart';
+import 'package:frontend/elements/add_resource_menu.dart';
 import 'package:frontend/elements/animated_menu.dart';
-import 'package:frontend/elements/cls_checkbox.dart';
-import 'package:frontend/elements/cls_textfield.dart';
+import 'package:frontend/elements/app_notify.dart';
+import 'package:frontend/elements/confirm_action_dialog.dart';
 import 'package:frontend/elements/ios_like_clipper.dart';
+import 'package:frontend/logic/http_requests.dart';
+import 'package:frontend/logic/resource_model.dart';
 import 'package:frontend/logic/service.dart';
 import 'package:frontend/txt_styles.dart';
 
-class ResourceRow extends StatelessWidget {
-  const ResourceRow({super.key});
+class ResourceRow extends StatefulWidget {
+  final Resource resource;
+  final Future<void> Function() onResourceEdited;
+
+  const ResourceRow({super.key, required this.resource, required this.onResourceEdited});
+
+  @override
+  State<ResourceRow> createState() => _ResourceRowState();
+}
+
+class _ResourceRowState extends State<ResourceRow> {
+  final GlobalKey _editButtonKey = GlobalKey();
+  final GlobalKey _deleteButtonKey = GlobalKey();
+
+  Future<void> _deleteResource() async {
+    final r = await HttpRequests().sendDeleteResourceRequest(id: widget.resource.id);
+    if (r.statusCode == 200) {
+      await widget.onResourceEdited();
+      if (!mounted) return;
+      AppNotify.show(context, message: "Ресурс удален", type: NotifyType.success);
+    } else {
+      if (!mounted) return;
+      AppNotify.show(context, message: "Не удалось удалить ресурс", type: NotifyType.success);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    Map<String, String> imagePaths = {
+      "room": "assets/images/back.jpg",
+      "laptop": "assets/images/notebook.png",
+      "board": "assets/images/board.png",
+      "projector": "assets/images/projector.png",
+    };
+
+    final Map<String, String> typeToName = {"room": "Комната", "laptop": "Ноутбук", "board": "Доска", "projector": "Проектор"};
+
     return Container(
       height: 70,
       decoration: BoxDecoration(color: Colors.white),
@@ -25,18 +60,19 @@ class ResourceRow extends StatelessWidget {
               height: 54,
               width: 80,
               decoration: BoxDecoration(
-                image: DecorationImage(image: AssetImage("assets/images/back.jpg"), fit: BoxFit.cover),
+                image: DecorationImage(image: AssetImage(imagePaths[widget.resource.type]!), fit: BoxFit.cover),
               ),
             ),
           ),
           const SizedBox(width: 18),
           SizedBox(
             width: 260,
-            child: Text("Переговорная альфа", style: TxtStyles.bodyMedium.copyWith(color: blackC)),
+            child: Text(widget.resource.name, style: TxtStyles.bodyMedium.copyWith(color: blackC)),
           ),
-          Text("Комната", style: TxtStyles.body.copyWith(color: lightBlackC)),
+          Text(typeToName[widget.resource.type]!, style: TxtStyles.body.copyWith(color: lightBlackC)),
           const Spacer(),
           Material(
+            key: _editButtonKey,
             color: Colors.transparent,
             shape: const CircleBorder(),
             clipBehavior: Clip.antiAlias,
@@ -46,6 +82,18 @@ class ResourceRow extends StatelessWidget {
               child: InkWell(
                 onTap: () {
                   logMsg("D", "Manage resources", "Tapped edit.");
+                  AnimatedMenu.show(
+                    context: context,
+                    anchorKey: _editButtonKey,
+                    width: 600,
+                    height: 560,
+                    backgroundColor: milkC,
+                    preferredDirection: AnimatedMenuDirection.bottomRight,
+                    shape: IOSLikeShape(30),
+                    builder: (context, close) {
+                      return AddResourceMenu(resource: widget.resource, onClose: close, onResourceChange: widget.onResourceEdited);
+                    },
+                  );
                 },
                 child: Icon(Icons.edit_rounded, color: lightBlackC, size: 30),
               ),
@@ -53,6 +101,7 @@ class ResourceRow extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Material(
+            key: _deleteButtonKey,
             color: Colors.transparent,
             shape: const CircleBorder(),
             clipBehavior: Clip.antiAlias,
@@ -62,248 +111,29 @@ class ResourceRow extends StatelessWidget {
               child: InkWell(
                 onTap: () {
                   logMsg("D", "Manage resources", "Tapped delete.");
+                  AnimatedMenu.show(
+                    context: context,
+                    anchorKey: _editButtonKey,
+                    width: 250,
+                    height: 140,
+                    backgroundColor: milkC,
+                    preferredDirection: AnimatedMenuDirection.bottomCenter,
+                    shape: IOSLikeShape(30),
+                    builder: (context, close) {
+                      return ConfirmActionDialog(
+                        label: "Удалить?",
+                        msg: "Действительно удалить этот ресурс?",
+                        onClose: close,
+                        onResourceChange: _deleteResource,
+                      );
+                    },
+                  );
                 },
                 child: Icon(Icons.delete_outline, color: Colors.red, size: 30),
               ),
             ),
           ),
           const SizedBox(width: 34),
-        ],
-      ),
-    );
-  }
-}
-
-class AddResourceMenu extends StatefulWidget {
-  final VoidCallback onClose;
-
-  const AddResourceMenu({super.key, required this.onClose});
-
-  @override
-  State<AddResourceMenu> createState() => _AddResourceMenuState();
-}
-
-class _AddResourceMenuState extends State<AddResourceMenu> with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
-  int selectedIndex = 0;
-
-  final List<String> _tabNames = ["Комната", "Ноутбук", "Доска", "Проектор"];
-
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
-  final TextEditingController _capacityController = TextEditingController(text: "0");
-  final TextEditingController _areaController = TextEditingController(text: "0");
-  bool _isProjectorChecked = false;
-  bool _isScreenChecked = false;
-  bool _isTvChecked = false;
-  bool _isBoardChecked = false;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _tabController = TabController(length: _tabNames.length, vsync: this);
-
-    _tabController.addListener(() {
-      if (_tabController.index != selectedIndex) {
-        setState(() {
-          selectedIndex = _tabController.index;
-        });
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text("Добавить ресурс", style: TxtStyles.h2.copyWith(color: darkGreenC)),
-          const SizedBox(height: 12),
-          TabBar(
-            controller: _tabController,
-            isScrollable: true,
-            tabAlignment: TabAlignment.start,
-
-            labelPadding: const EdgeInsets.only(right: 24),
-            padding: EdgeInsets.zero,
-
-            overlayColor: WidgetStateProperty.all(Colors.transparent),
-            splashFactory: NoSplash.splashFactory,
-
-            labelColor: accentGreenC,
-            unselectedLabelColor: blackC,
-            labelStyle: TxtStyles.sidebarItemActive.copyWith(color: accentGreenC),
-            unselectedLabelStyle: TxtStyles.sidebarItem.copyWith(color: accentGreenC),
-
-            indicatorColor: darkGreenC,
-            indicatorWeight: 2,
-            indicatorSize: TabBarIndicatorSize.label,
-
-            dividerColor: Colors.transparent,
-            tabs: List.generate(_tabNames.length, (index) {
-              return Tab(text: _tabNames[index]);
-            }),
-          ),
-          const SizedBox(height: 12),
-          ClsTextfield(controller: _nameController, hint: "Название"),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _descriptionController,
-            maxLines: 4,
-            minLines: 2,
-            maxLength: 250,
-            decoration: InputDecoration(
-              labelText: 'Описание',
-              labelStyle: TxtStyles.captionMedium.copyWith(color: blackC),
-              floatingLabelStyle: TxtStyles.captionMedium.copyWith(color: accentGreenC),
-              hintText: 'Введите описание...',
-              hintStyle: TxtStyles.caption.copyWith(color: blackC),
-              alignLabelWithHint: true,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(18)),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(18),
-                borderSide: const BorderSide(color: accentGreenC, width: 2),
-              ),
-            ),
-            style: TxtStyles.body.copyWith(color: lightBlackC),
-          ),
-          const SizedBox(height: 12),
-          Text("Параметры", style: TxtStyles.h3.copyWith(color: darkGreenC)),
-          const SizedBox(height: 8),
-
-          // ROOM
-          if (selectedIndex == 0) ...[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text("Вместимость (чел):", style: TxtStyles.bodyMedium.copyWith(color: blackC)),
-                          const SizedBox(width: 8),
-                          SizedBox(
-                            width: 35,
-                            child: TextField(
-                              controller: _capacityController,
-                              style: TxtStyles.body.copyWith(color: accentGreenC),
-                              decoration: const InputDecoration(
-                                // Убираем всё визуальное оформление поля
-                                border: InputBorder.none,
-                                enabledBorder: InputBorder.none,
-                                focusedBorder: InputBorder.none,
-                                errorBorder: InputBorder.none,
-                                disabledBorder: InputBorder.none,
-                                counterText: "",
-
-                                // Убираем стандартные отступы
-                                isDense: true,
-                                contentPadding: EdgeInsets.zero,
-                              ),
-                              maxLength: 3,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Text("Площадь (м²):", style: TxtStyles.bodyMedium.copyWith(color: blackC)),
-                          const SizedBox(width: 8),
-                          SizedBox(
-                            width: 35,
-                            child: TextField(
-                              controller: _areaController,
-                              style: TxtStyles.body.copyWith(color: accentGreenC),
-                              decoration: const InputDecoration(
-                                // Убираем всё визуальное оформление поля
-                                border: InputBorder.none,
-                                enabledBorder: InputBorder.none,
-                                focusedBorder: InputBorder.none,
-                                errorBorder: InputBorder.none,
-                                disabledBorder: InputBorder.none,
-                                counterText: "",
-
-                                // Убираем стандартные отступы
-                                isDense: true,
-                                contentPadding: EdgeInsets.zero,
-                              ),
-                              maxLength: 3,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          ClsCheckbox(
-                            value: _isProjectorChecked,
-                            onChanged: (value) {
-                              setState(() => _isProjectorChecked = value);
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          Text("Проектор", style: TxtStyles.bodyMedium.copyWith(color: blackC)),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          ClsCheckbox(
-                            value: _isScreenChecked,
-                            onChanged: (value) {
-                              setState(() => _isScreenChecked = value);
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          Text("Экран", style: TxtStyles.bodyMedium.copyWith(color: blackC)),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          ClsCheckbox(
-                            value: _isTvChecked,
-                            onChanged: (value) {
-                              setState(() => _isTvChecked = value);
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          Text("Телевизор", style: TxtStyles.bodyMedium.copyWith(color: blackC)),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          ClsCheckbox(
-                            value: _isBoardChecked,
-                            onChanged: (value) {
-                              setState(() => _isBoardChecked = value);
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          Text("Доска", style: TxtStyles.bodyMedium.copyWith(color: blackC)),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
         ],
       ),
     );
@@ -319,26 +149,86 @@ class ManageResourcesPage extends StatefulWidget {
 
 class _ManageResourcesPageState extends State<ManageResourcesPage> with SingleTickerProviderStateMixin {
   final GlobalKey _addResourceButtonKey = GlobalKey();
-
   final ScrollController _scrollController = ScrollController();
   late final TabController _tabController;
   int selectedIndex = 0;
 
+  final List<Resource> _resources = [];
+  bool _isLoading = false;
+  bool _hasMore = true;
+  int _page = 0;
+
+  static const int _limit = 24;
+
   final List<String> _tabNames = ["Все", "Комнаты", "Ноутбуки", "Доски", "Проекторы"];
+  final List<String?> _resourceTypes = [null, "room", "laptop", "board", "projector"];
 
   @override
   void initState() {
     super.initState();
 
     _tabController = TabController(length: _tabNames.length, vsync: this);
-
     _tabController.addListener(() {
       if (_tabController.index != selectedIndex) {
         setState(() {
           selectedIndex = _tabController.index;
         });
+        _page = 0;
+        _isLoading = false;
+        _hasMore = true;
+        _resources.clear();
+        _loadResources();
       }
     });
+
+    _loadResources();
+
+    _scrollController.addListener(() {
+      final position = _scrollController.position;
+
+      if (position.pixels >= position.maxScrollExtent - 500) {
+        _loadResources();
+      }
+    });
+  }
+
+  Future<void> _loadResources() async {
+    if (_isLoading || !_hasMore) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final selectedResourceType = _resourceTypes[selectedIndex];
+      final newResources = await HttpRequests().fetchResources(page: _page, limit: _limit, type: selectedResourceType);
+
+      setState(() {
+        _resources.addAll(newResources);
+        _page++;
+
+        if (newResources.length < _limit) {
+          _hasMore = false;
+        }
+      });
+    } catch (e) {
+      logMsg("E", "Load resources", "Error loading resources: $e");
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _reloadResources() async {
+    setState(() {
+      _resources.clear();
+      _page = 0;
+      _hasMore = true;
+      _isLoading = false;
+    });
+
+    await _loadResources();
   }
 
   @override
@@ -349,6 +239,8 @@ class _ManageResourcesPageState extends State<ManageResourcesPage> with SingleTi
 
   @override
   Widget build(BuildContext context) {
+    final itemCount = _resources.length + (_hasMore ? 1 : 0);
+
     return Padding(
       padding: const EdgeInsets.all(40),
       child: Column(
@@ -395,12 +287,12 @@ class _ManageResourcesPageState extends State<ManageResourcesPage> with SingleTi
                         context: context,
                         anchorKey: _addResourceButtonKey,
                         width: 600,
-                        height: 500,
+                        height: 560,
                         backgroundColor: milkC,
                         preferredDirection: AnimatedMenuDirection.bottomRight,
                         shape: IOSLikeShape(30),
                         builder: (context, close) {
-                          return AddResourceMenu(onClose: close);
+                          return AddResourceMenu(onClose: close, onResourceChange: _reloadResources);
                         },
                       );
                     },
@@ -470,9 +362,17 @@ class _ManageResourcesPageState extends State<ManageResourcesPage> with SingleTi
                           thumbVisibility: true,
                           child: ListView.separated(
                             controller: _scrollController,
-                            itemCount: 10,
+                            itemCount: itemCount,
                             itemBuilder: (context, index) {
-                              return ResourceRow();
+                              if (index >= _resources.length) {
+                                return const Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.all(12),
+                                    child: CircularProgressIndicator(color: accentGreenC),
+                                  ),
+                                );
+                              }
+                              return ResourceRow(resource: _resources[index], onResourceEdited: _reloadResources);
                             },
                             separatorBuilder: (context, index) {
                               return Divider(height: 1, thickness: 1, color: darkMilkC);
