@@ -30,7 +30,7 @@ async def update_resource(resource_data: EditResourceData, user_id: int = Depend
     if resource is None:
         raise HTTPException(status_code=400, detail="Resource does not exists")
 
-    if resource.type != resource_data.type:
+    if resource.type != resource_data.type.value:
         update_data = resource_data.model_dump(exclude_unset=True)
         for key, value in update_data.items():
             if value is not None:
@@ -54,3 +54,14 @@ async def update_resource(resource_data: EditResourceData, user_id: int = Depend
     await db.commit()
     await db.refresh(resource)
     return resource
+
+@router.delete("/delete", response_model=ResourceDTO)
+async def delete_resource(resource_id: int, user_id: int = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    resource = await db.get(Resource, resource_id)
+
+    if resource is None:
+        raise HTTPException(status_code=404, detail="Resource not found")
+
+    await db.delete(resource)
+    await db.commit()
+    return f"Successfully deleted resource with id: {resource_id}"
