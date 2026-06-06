@@ -6,7 +6,7 @@ COPY pubspec.* ./
 RUN flutter pub get
 
 COPY . .
-RUN flutter build web --release
+RUN flutter build web --release --no-tree-shake-icons
 
 FROM nginx:alpine
 

@@ -13,8 +13,9 @@ import 'package:frontend/txt_styles.dart';
 class ResourceRow extends StatefulWidget {
   final Resource resource;
   final Future<void> Function() onResourceEdited;
+  final Future<void> Function(int id) onResourceDelete;
 
-  const ResourceRow({super.key, required this.resource, required this.onResourceEdited});
+  const ResourceRow({super.key, required this.resource, required this.onResourceEdited, required this.onResourceDelete});
 
   @override
   State<ResourceRow> createState() => _ResourceRowState();
@@ -23,18 +24,6 @@ class ResourceRow extends StatefulWidget {
 class _ResourceRowState extends State<ResourceRow> {
   final GlobalKey _editButtonKey = GlobalKey();
   final GlobalKey _deleteButtonKey = GlobalKey();
-
-  Future<void> _deleteResource() async {
-    final r = await HttpRequests().sendDeleteResourceRequest(id: widget.resource.id);
-    if (r.statusCode == 200) {
-      await widget.onResourceEdited();
-      if (!mounted) return;
-      AppNotify.show(context, message: "Ресурс удален", type: NotifyType.success);
-    } else {
-      if (!mounted) return;
-      AppNotify.show(context, message: "Не удалось удалить ресурс", type: NotifyType.success);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -124,7 +113,9 @@ class _ResourceRowState extends State<ResourceRow> {
                         label: "Удалить?",
                         msg: "Действительно удалить этот ресурс?",
                         onClose: close,
-                        onResourceChange: _deleteResource,
+                        onResourceChange: () {
+                          return widget.onResourceDelete(widget.resource.id);
+                        },
                       );
                     },
                   );
@@ -192,6 +183,18 @@ class _ManageResourcesPageState extends State<ManageResourcesPage> with SingleTi
     });
   }
 
+  Future<void> _deleteResource(int id) async {
+    final r = await HttpRequests().sendDeleteResourceRequest(id: id);
+    if (r.statusCode == 200) {
+      await _reloadResources();
+      if (!mounted) return;
+      AppNotify.show(context, message: "Ресурс удален", type: NotifyType.success);
+    } else {
+      if (!mounted) return;
+      AppNotify.show(context, message: "Не удалось удалить ресурс", type: NotifyType.error);
+    }
+  }
+
   Future<void> _loadResources() async {
     if (_isLoading || !_hasMore) return;
 
@@ -257,6 +260,9 @@ class _ManageResourcesPageState extends State<ManageResourcesPage> with SingleTi
 
                 labelPadding: const EdgeInsets.only(right: 24),
                 padding: EdgeInsets.zero,
+
+                overlayColor: WidgetStateProperty.all(Colors.transparent),
+                splashFactory: NoSplash.splashFactory,
 
                 labelColor: accentGreenC,
                 unselectedLabelColor: blackC,
@@ -372,7 +378,11 @@ class _ManageResourcesPageState extends State<ManageResourcesPage> with SingleTi
                                   ),
                                 );
                               }
-                              return ResourceRow(resource: _resources[index], onResourceEdited: _reloadResources);
+                              return ResourceRow(
+                                resource: _resources[index],
+                                onResourceEdited: _reloadResources,
+                                onResourceDelete: _deleteResource,
+                              );
                             },
                             separatorBuilder: (context, index) {
                               return Divider(height: 1, thickness: 1, color: darkMilkC);
