@@ -31,12 +31,19 @@ async def update_resource(resource_data: EditResourceData, user_id: int = Depend
         raise HTTPException(status_code=400, detail="Resource does not exists")
 
     if resource.type != resource_data.type.value:
-        update_data = resource_data.model_dump(exclude_unset=True)
+        update_data = resource_data.model_dump(
+            exclude_unset=True,
+            mode="json",
+        )
         for key, value in update_data.items():
             if value is not None:
                 setattr(resource, key, value)
     else:
-        update_data = resource_data.model_dump(exclude_unset=True, exclude={"extra_attributes"})
+        update_data = resource_data.model_dump(
+            exclude_unset=True,
+            exclude={"extra_attributes"},
+            mode="json",
+        )
         for key, value in update_data.items():
             if value is not None:
                 setattr(resource, key, value)
