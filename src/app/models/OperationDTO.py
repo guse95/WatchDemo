@@ -8,6 +8,7 @@ class OperationDTO(BaseModel):
     booker_id: int
     resource_id: int
     status: OperationStatus
+    description: str
     created_at: datetime
     last_update_at: datetime
     booked_from: datetime
