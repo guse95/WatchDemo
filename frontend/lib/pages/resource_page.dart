@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/colors.dart';
 import 'package:frontend/elements/date_picker_button.dart';
@@ -5,6 +6,8 @@ import 'package:frontend/elements/date_plate.dart';
 import 'package:frontend/elements/ios_like_clipper.dart';
 import 'package:frontend/elements/purpose_field.dart';
 import 'package:frontend/elements/time_field.dart';
+import 'package:frontend/logic/booking_model.dart';
+import 'package:frontend/logic/http_requests.dart';
 import 'package:frontend/logic/resource_model.dart';
 import 'package:frontend/logic/service.dart';
 import 'package:frontend/txt_styles.dart';
@@ -35,11 +38,23 @@ class _ResourcePageState extends State<ResourcePage> {
   final TextEditingController purposeController = TextEditingController();
   final GlobalKey<FormState> purposeFormKey = GlobalKey<FormState>();
 
+  List<Booking>? _bookingsList;
+
+  Future<void> _loadBookings(int id, DateTime day) async {
+    _bookingsList = await HttpRequests().fetchBookingsForResource(id: id, day: day);
+    if (kDebugMode) {
+      for (var booking in _bookingsList!) {
+        print(booking);
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     final now = DateTime.now();
     selectedDate = DateTime(now.year, now.month, now.day);
+    _loadBookings(widget.resource.id, selectedDate);
   }
 
   Widget _property({required IconData icon, required String text}) {
