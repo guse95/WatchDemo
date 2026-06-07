@@ -61,6 +61,7 @@ class OperationHistory(Base):
     booker_id: Mapped[int] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"), nullable=False, index=True)
     resource_id: Mapped[int] = mapped_column(ForeignKey("resource.id", ondelete="CASCADE"), nullable=False, index=True)
     status: Mapped[OperationStatus] = mapped_column(Enum(OperationStatus), default=OperationStatus.ACTIVE, nullable=False)
+    description: Mapped[str] = mapped_column(String(100), nullable=False)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=func.now(), nullable=False)
     last_update_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=func.now(), nullable=False)
     booked_from: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False)
