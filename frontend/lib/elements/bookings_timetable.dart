@@ -175,6 +175,7 @@ class _BookingsTimetableState extends State<BookingsTimetable> {
     return [
       for (var index = 0; index < visibleBookings.length; index++)
         _buildBookingCard(
+          description: visibleBookings[index].booking.description,
           bookingStart: visibleBookings[index].start,
           bookingEnd: visibleBookings[index].end,
           dayStart: dayStart,
@@ -190,6 +191,7 @@ class _BookingsTimetableState extends State<BookingsTimetable> {
   }
 
   Widget _buildBookingCard({
+    required String description,
     required DateTime bookingStart,
     required DateTime bookingEnd,
     required DateTime dayStart,
@@ -237,7 +239,7 @@ class _BookingsTimetableState extends State<BookingsTimetable> {
                   children: [
                     Flexible(
                       child: Text(
-                        'Бронирование',
+                        description,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TxtStyles.calendarEventTitle.copyWith(
