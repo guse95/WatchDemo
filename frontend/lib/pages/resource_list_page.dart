@@ -1,63 +1,63 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/colors.dart';
+import 'package:frontend/elements/ios_like_clipper.dart';
 import 'package:frontend/logic/http_requests.dart';
 import 'package:frontend/logic/resource_model.dart';
+import 'package:frontend/logic/service.dart';
 import 'package:frontend/txt_styles.dart';
 
 class ResourceCard extends StatelessWidget {
   final Resource resource;
+  final VoidCallback onTap;
 
   const ResourceCard({
     super.key,
-    required this.resource,
+    required this.resource, required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
+    Map<String, String> imagePaths = {
+      "room": "assets/images/back.jpg",
+      "laptop": "assets/images/notebook.png",
+      "board": "assets/images/board.png",
+      "projector": "assets/images/projector.png",
+    };
+
+    return Material(
+      elevation: 5,
+      color: Colors.white,
+      shape: IOSLikeShape(30),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () {
-          // переход на страницу ресурса
-        },
+        onTap: onTap,
+        hoverColor: accentGreenC.withValues(alpha: 0.2),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Expanded(
-            //   child: resource.imageUrl != null
-            //       ? Image.network(
-            //     resource.imageUrl!,
-            //     width: double.infinity,
-            //     fit: BoxFit.cover,
-            //   )
-            //       : Container(
-            //     width: double.infinity,
-            //     color: Colors.grey.shade200,
-            //     child: const Icon(Icons.meeting_room, size: 48),
-            //   ),
-            // ),
+            Container(
+              height: 160,
+              decoration: BoxDecoration(
+                image: DecorationImage(image: AssetImage(imagePaths[resource.type]!), fit: BoxFit.cover),
+              ),
+            ),
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.fromLTRB(18, 12, 12, 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     resource.name,
-                    style: Theme.of(context).textTheme.titleMedium,
+                    style: TxtStyles.cardTitle.copyWith(color: blackC),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
-                  // Text(
-                  //   resource.location ?? 'Локация не указана',
-                  //   style: Theme.of(context).textTheme.bodySmall,
-                  // ),
-                  // if (resource.capacity != null)
-                  //   Text(
-                  //     'Вместимость: ${resource.capacity}',
-                  //     style: Theme.of(context).textTheme.bodySmall,
-                  //   ),
+                  Text(
+                    resource.description,
+                    style: TxtStyles.body.copyWith(color: blackC.withValues(alpha: 0.6), height: 1.2),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ],
               ),
             ),
@@ -69,31 +69,51 @@ class ResourceCard extends StatelessWidget {
 }
 
 class ResourceListPage extends StatefulWidget {
-  const ResourceListPage({super.key});
+  final ValueChanged<Resource> onResourceSelected;
+
+  const ResourceListPage({super.key, required this.onResourceSelected});
 
   @override
   State<ResourceListPage> createState() => _ResourceListPageState();
 }
 
-class _ResourceListPageState extends State<ResourceListPage> {
+class _ResourceListPageState extends State<ResourceListPage> with SingleTickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
-  final List<Resource> _resources = [];
+  late final TabController _tabController;
+  int selectedIndex = 0;
 
+  final List<Resource> _resources = [];
   bool _isLoading = false;
   bool _hasMore = true;
-  int _page = 1;
+  int _page = 0;
 
   static const int _limit = 24;
+
+  final List<String> _tabNames = ["Все", "Комнаты", "Ноутбуки", "Доски", "Проекторы"];
+  final List<String?> _resourceTypes = [null, "room", "laptop", "board", "projector"];
 
   @override
   void initState() {
     super.initState();
 
+    _tabController = TabController(length: _tabNames.length, vsync: this);
+    _tabController.addListener(() {
+      if (_tabController.index != selectedIndex) {
+        setState(() {
+          selectedIndex = _tabController.index;
+        });
+        _page = 0;
+        _isLoading = false;
+        _hasMore = true;
+        _resources.clear();
+        _loadResources();
+      }
+    });
+
     _loadResources();
 
     _scrollController.addListener(() {
       final position = _scrollController.position;
-
       if (position.pixels >= position.maxScrollExtent - 500) {
         _loadResources();
       }
@@ -108,7 +128,8 @@ class _ResourceListPageState extends State<ResourceListPage> {
     });
 
     try {
-      final newResources = await HttpRequests().fetchResources(page: _page, limit: _limit);
+      final selectedResourceType = _resourceTypes[selectedIndex];
+      final newResources = await HttpRequests().fetchResources(page: _page, limit: _limit, type: selectedResourceType);
 
       setState(() {
         _resources.addAll(newResources);
@@ -119,7 +140,7 @@ class _ResourceListPageState extends State<ResourceListPage> {
         }
       });
     } catch (e) {
-      debugPrint('Ошибка загрузки ресурсов: $e');
+      logMsg("E", "Load resources", "Error loading resources: $e");
     } finally {
       setState(() {
         _isLoading = false;
@@ -130,33 +151,70 @@ class _ResourceListPageState extends State<ResourceListPage> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final itemCount = _resources.length + (_hasMore ? 1 : 0);
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(40, 40, 40, 0),
+      padding: const EdgeInsets.all(40),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text("Доступные ресурсы", style: TxtStyles.h1.copyWith(color: blackC)),
+          const SizedBox(height: 18),
+          TabBar(
+            controller: _tabController,
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+
+            labelPadding: const EdgeInsets.only(right: 24),
+            padding: EdgeInsets.zero,
+
+            overlayColor: WidgetStateProperty.all(Colors.transparent),
+            splashFactory: NoSplash.splashFactory,
+
+            labelColor: accentGreenC,
+            unselectedLabelColor: blackC,
+            labelStyle: TxtStyles.sidebarItemActive.copyWith(color: accentGreenC),
+            unselectedLabelStyle: TxtStyles.sidebarItem.copyWith(color: accentGreenC),
+
+            indicatorColor: darkGreenC,
+            indicatorWeight: 2,
+            indicatorSize: TabBarIndicatorSize.label,
+
+            dividerColor: Colors.transparent,
+            tabs: List.generate(_tabNames.length, (index) {
+              return Tab(text: _tabNames[index]);
+            }),
+          ),
+          const SizedBox(height: 16),
           Expanded(
             child: GridView.builder(
               controller: _scrollController,
-              itemCount: _resources.length,
+              itemCount: itemCount,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
+                crossAxisCount: 4,
                 crossAxisSpacing: 24,
                 mainAxisSpacing: 24,
-                //childAspectRatio: 1.3,
+                childAspectRatio: 1.2,
               ),
               itemBuilder: (context, index) {
                 if (index >= _resources.length) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(12),
+                      child: CircularProgressIndicator(color: accentGreenC),
+                    ),
+                  );
                 }
                 final resource = _resources[index];
-                return ResourceCard(resource: resource);
+                return ResourceCard(resource: resource, onTap: () {
+                  widget.onResourceSelected(resource);
+                });
               },
             ),
           ),

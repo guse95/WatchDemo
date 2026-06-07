@@ -3,10 +3,12 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:frontend/colors.dart';
 import 'package:frontend/elements/animated_menu.dart';
 import 'package:frontend/elements/ios_like_clipper.dart';
+import 'package:frontend/logic/resource_model.dart';
 import 'package:frontend/logic/service.dart';
 import 'package:frontend/logic/user_info_provider.dart';
 import 'package:frontend/pages/manage_resources_page.dart';
 import 'package:frontend/pages/resource_list_page.dart';
+import 'package:frontend/pages/resource_page.dart';
 import 'package:frontend/profile_menu.dart';
 import 'package:frontend/txt_styles.dart';
 import 'package:provider/provider.dart';
@@ -28,6 +30,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final GlobalKey _profileButtonKey = GlobalKey();
+  Resource? _selectedResource;
 
   final List<TabInfo> _tabs = [
     TabInfo(id: 0, name: "Ресурсы", iconPath: "assets/icons/Board.svg"),
@@ -36,7 +39,36 @@ class _HomePageState extends State<HomePage> {
     TabInfo(id: 3, name: "Пользователи", iconPath: "assets/icons/Users.svg"),
   ];
 
-  final List<Widget> _pages = [ResourceListPage(), SizedBox.shrink(), ManageResourcesPage(), SizedBox.shrink()];
+  Widget _buildContent() {
+    if (_selectedResource != null) {
+      return ResourcePage(
+        resource: _selectedResource!,
+        onBack: () {
+          setState(() {
+            _selectedResource = null;
+          });
+        },
+      );
+    }
+    switch (_tabIndex) {
+      case 0:
+        return ResourceListPage(
+          onResourceSelected: (resource) {
+            setState(() {
+              _selectedResource = resource;
+            });
+          },
+        );
+      case 1:
+        return const SizedBox.shrink();
+      case 2:
+        return const ManageResourcesPage();
+      case 3:
+        return const SizedBox.shrink();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
 
   late int _tabsShown;
   int _tabIndex = 0;
@@ -51,7 +83,9 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final String userEmail = context.read<UserInfoProvider>().email;
-    final String userRole = context.read<UserInfoProvider>().passLevel == 0 ? "Администратор" : "Пользователь";
+    final String userRole = context.read<UserInfoProvider>().passLevel == 0
+        ? "Администратор"
+        : "Пользователь";
 
     return Scaffold(
       backgroundColor: Color.fromRGBO(40, 40, 40, 1),
@@ -69,13 +103,20 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       Image.asset("assets/images/logo2.png", height: 40),
                       const SizedBox(width: 12),
-                      Text("Reservo", style: TxtStyles.h2.copyWith(color: milkC)),
+                      Text(
+                        "Reservo",
+                        style: TxtStyles.h2.copyWith(color: milkC),
+                      ),
                     ],
                   ),
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(32, 0, 32, 32),
-                  child: Container(width: double.infinity, height: 2, color: Color.fromRGBO(90, 130, 100, 1)),
+                  child: Container(
+                    width: double.infinity,
+                    height: 2,
+                    color: Color.fromRGBO(90, 130, 100, 1),
+                  ),
                 ),
                 Expanded(
                   child: Padding(
@@ -86,7 +127,9 @@ class _HomePageState extends State<HomePage> {
                           final tabItem = Padding(
                             padding: const EdgeInsets.only(bottom: 8),
                             child: Material(
-                              color: _tabIndex == index ? salatC : Colors.transparent,
+                              color: _tabIndex == index
+                                  ? salatC
+                                  : Colors.transparent,
                               shape: IOSLikeShape(13),
                               clipBehavior: Clip.antiAlias,
                               child: SizedBox(
@@ -96,8 +139,15 @@ class _HomePageState extends State<HomePage> {
                                   splashColor: Colors.transparent,
                                   hoverColor: salatC.withValues(alpha: 0.4),
                                   onTap: () {
-                                    logMsg("D", "Home page", "Tapped tab $index.");
-                                    setState(() => _tabIndex = index);
+                                    logMsg(
+                                      "D",
+                                      "Home page",
+                                      "Tapped tab $index.",
+                                    );
+                                    setState(() {
+                                      _tabIndex = index;
+                                      _selectedResource = null;
+                                    });
                                   },
                                   child: Row(
                                     children: [
@@ -106,14 +156,22 @@ class _HomePageState extends State<HomePage> {
                                         _tabs[index].iconPath,
                                         width: 22,
                                         height: 22,
-                                        colorFilter: ColorFilter.mode(_tabIndex == index ? darkGreenC : milkC, BlendMode.srcATop),
+                                        colorFilter: ColorFilter.mode(
+                                          _tabIndex == index
+                                              ? darkGreenC
+                                              : milkC,
+                                          BlendMode.srcATop,
+                                        ),
                                       ),
                                       const SizedBox(width: 8),
                                       Text(
                                         _tabs[index].name,
                                         style: _tabIndex == index
-                                            ? TxtStyles.sidebarItemActive.copyWith(color: darkGreenC)
-                                            : TxtStyles.sidebarItem.copyWith(color: milkC),
+                                            ? TxtStyles.sidebarItemActive
+                                                  .copyWith(color: darkGreenC)
+                                            : TxtStyles.sidebarItem.copyWith(
+                                                color: milkC,
+                                              ),
                                       ),
                                     ],
                                   ),
@@ -130,7 +188,13 @@ class _HomePageState extends State<HomePage> {
                                   padding: EdgeInsets.fromLTRB(0, 40, 0, 16),
                                   child: Align(
                                     alignment: Alignment.centerLeft,
-                                    child: Text("АДМИНИСТРИРОВАНИЕ", style: TxtStyles.caption.copyWith(color: milkC, fontSize: 14)),
+                                    child: Text(
+                                      "АДМИНИСТРИРОВАНИЕ",
+                                      style: TxtStyles.caption.copyWith(
+                                        color: milkC,
+                                        fontSize: 14,
+                                      ),
+                                    ),
                                   ),
                                 ),
                             ],
@@ -153,7 +217,8 @@ class _HomePageState extends State<HomePage> {
                                   width: 260,
                                   height: 300,
                                   backgroundColor: milkC,
-                                  preferredDirection: AnimatedMenuDirection.topCenter,
+                                  preferredDirection:
+                                      AnimatedMenuDirection.topCenter,
                                   shape: IOSLikeShape(30),
                                   builder: (context, close) {
                                     return ProfileMenu(onClose: close);
@@ -166,16 +231,34 @@ class _HomePageState extends State<HomePage> {
                                   Container(
                                     width: 50,
                                     height: 50,
-                                    decoration: BoxDecoration(color: milkC, shape: BoxShape.circle),
-                                    child: Icon(Icons.person_2_rounded, color: darkGreenC, size: 30),
+                                    decoration: BoxDecoration(
+                                      color: milkC,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.person_2_rounded,
+                                      color: darkGreenC,
+                                      size: 30,
+                                    ),
                                   ),
                                   const SizedBox(width: 12),
                                   Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Text(userEmail, style: TxtStyles.bodyMedium.copyWith(color: darkGreenC)),
-                                      Text(userRole, style: TxtStyles.bodySmall.copyWith(color: darkGreenC)),
+                                      Text(
+                                        userEmail,
+                                        style: TxtStyles.bodyMedium.copyWith(
+                                          color: darkGreenC,
+                                        ),
+                                      ),
+                                      Text(
+                                        userRole,
+                                        style: TxtStyles.bodySmall.copyWith(
+                                          color: darkGreenC,
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ],
@@ -192,7 +275,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           Expanded(
-            child: Container(color: milkC, child: _pages[_tabIndex]),
+            child: Container(color: milkC, child: _buildContent()),
           ),
         ],
       ),
