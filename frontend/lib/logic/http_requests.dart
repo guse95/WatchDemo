@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:frontend/logic/auth_service.dart';
+import 'package:frontend/logic/booking_model.dart';
 import 'package:frontend/logic/resource_model.dart';
 import 'package:frontend/logic/service.dart';
 import 'package:http/http.dart' as http;
@@ -27,7 +28,7 @@ class HttpRequests {
       Uri.parse("$apiUrl/auth/whois").replace(queryParameters: {"ref_token": refToken}),
       headers: {"Authorization": "Bearer $accessToken"},
     );
-    logMsg("D", "Login request", "Code ${response.statusCode}. Body:\n${jsonDecode(response.body)}");
+    logMsg("D", "Whois request", "Code ${response.statusCode}. Body:\n${jsonDecode(response.body)}");
     return response;
   }
 
@@ -57,7 +58,7 @@ class HttpRequests {
       Uri.parse("$apiUrl/auth/logout").replace(queryParameters: {"token": refToken}),
       headers: {"Authorization": "Bearer $accessToken", "Content-Type": "application/json"},
     );
-    logMsg("D", "Register request", "Code ${response.statusCode}. Body:\n${jsonDecode(response.body)}");
+    logMsg("D", "Logout request", "Code ${response.statusCode}. Body:\n${jsonDecode(response.body)}");
     return response;
   }
 
@@ -99,7 +100,7 @@ class HttpRequests {
       headers: {"Authorization": "Bearer $accessToken", "Content-Type": "application/json"},
       body: reqBody,
     );
-    logMsg("D", "Register request", "Code ${response.statusCode}. Body:\n${jsonDecode(response.body)}");
+    logMsg("D", "Add res request", "Code ${response.statusCode}. Body:\n${jsonDecode(response.body)}");
     return response;
   }
 
@@ -112,17 +113,59 @@ class HttpRequests {
       headers: {"Authorization": "Bearer $accessToken", "Content-Type": "application/json"},
       body: reqBody,
     );
-    logMsg("D", "Register request", "Code ${response.statusCode}. Body:\n${jsonDecode(response.body)}");
+    logMsg("D", "Update res request", "Code ${response.statusCode}. Body:\n${jsonDecode(response.body)}");
     return response;
   }
 
   Future<http.Response> sendDeleteResourceRequest({required int id}) async {
     final accessToken = await AuthService().getAccessToken();
-    final response = await http.delete(
-      Uri.parse("$apiUrl/resources/admin/delete/$id"),
+    final response = await http.delete(Uri.parse("$apiUrl/resources/admin/delete/$id"), headers: {"Authorization": "Bearer $accessToken"});
+    logMsg("D", "Delete res request", "Code ${response.statusCode}. Body:\n${jsonDecode(response.body)}");
+    return response;
+  }
+
+  String dateTimeToApiString(DateTime dateTime) {
+    final year = dateTime.year.toString();
+    final month = dateTime.month.toString().padLeft(2, '0');
+    final day = dateTime.day.toString().padLeft(2, '0');
+    final hour = dateTime.hour.toString().padLeft(2, '0');
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+
+    return '$year-$month-${day}T$hour:$minute';
+  }
+
+  Future<List<Booking>> fetchBookingsForResource({required int id, required DateTime day}) async {
+    final accessToken = await AuthService().getAccessToken();
+
+    final startTime = dateTimeToApiString(day);
+    final endOfDay = DateTime(day.year, day.month, day.day, 23, 59);
+    final endTime = dateTimeToApiString(endOfDay);
+
+    final response = await http.get(
+      Uri.parse("$apiUrl/resources/user/book/$id").replace(queryParameters: {"time_from": startTime, "time_to": endTime}),
       headers: {"Authorization": "Bearer $accessToken"},
     );
-    logMsg("D", "Register request", "Code ${response.statusCode}. Body:\n${jsonDecode(response.body)}");
+    logMsg("D", "Fetch bookings request", "Code ${response.statusCode}. Body:\n${jsonDecode(response.body)}");
+
+    List<Booking> bookings = [];
+    final data = jsonDecode(response.body);
+    for (var booking in data) {
+      final bookingObj = Booking.fromJson(booking);
+      bookings.add(bookingObj);
+    }
+    return bookings;
+  }
+
+  Future<http.Response> bookResourceRequest({required int id, required String desc, required String from, required String to}) async {
+    final accessToken = await AuthService().getAccessToken();
+
+    final response = await http.post(
+      Uri.parse(
+        "$apiUrl/resources/user/book/$id",
+      ).replace(queryParameters: {"description": desc, "booked_from": from, "booked_to": to}),
+      headers: {"Authorization": "Bearer $accessToken"},
+    );
+    logMsg("D", "Book res request", "Code ${response.statusCode}. Body:\n${jsonDecode(response.body)}");
     return response;
   }
 }

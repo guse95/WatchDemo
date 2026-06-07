@@ -237,6 +237,7 @@ class _ManageResourcesPageState extends State<ManageResourcesPage> with SingleTi
   @override
   void dispose() {
     _tabController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
