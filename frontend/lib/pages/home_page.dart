@@ -36,7 +36,6 @@ class _HomePageState extends State<HomePage> {
     TabInfo(id: 0, name: "Ресурсы", iconPath: "assets/icons/Board.svg"),
     TabInfo(id: 1, name: "Мои брони", iconPath: "assets/icons/BadgeCheck.svg"),
     TabInfo(id: 2, name: "Ресурсы", iconPath: "assets/icons/ResourcesEdit.svg"),
-    TabInfo(id: 3, name: "Пользователи", iconPath: "assets/icons/Users.svg"),
   ];
 
   Widget _buildContent() {
@@ -77,7 +76,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     final userPassLevel = context.read<UserInfoProvider>().passLevel;
-    _tabsShown = userPassLevel == 0 ? 4 : 2;
+    _tabsShown = userPassLevel == 0 ? 3 : 2;
   }
 
   @override
