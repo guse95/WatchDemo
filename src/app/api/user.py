@@ -5,6 +5,7 @@ from fastapi.openapi.models import Operation
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.db import get_db, Resource, OperationHistory
 from app.features.JWTChecker import get_current_user
@@ -103,7 +104,7 @@ async def cancel_booking(
         "booked_to": operation.booked_to,
     }
 
-@router.get("/book/my", response_model=list[OperationDTO])
+@router.get("/book/my")
 async def get_my_bookings(
         time_from: datetime = datetime.now().replace(hour=0, minute=0, second=0),
         time_to: datetime = datetime.now().replace(hour=23, minute=59, second=59),
@@ -117,11 +118,11 @@ async def get_my_bookings(
             OperationHistory.status.in_([OperationStatus.ACTIVE, OperationStatus.FINISHED]),
             OperationHistory.booked_from < time_to,
             OperationHistory.booked_to > time_from
-        )
+        ).options(selectinload(OperationHistory.resource))
     )
     return bookings.all()
 
-@router.get("/book/{resource_id}", response_model=list[OperationDTO])
+@router.get("/book/{resource_id}")
 async def get_resource_bookings(
         resource_id: int,
         time_from: datetime = datetime.now().replace(hour=0, minute=0, second=0),
@@ -136,6 +137,6 @@ async def get_resource_bookings(
             OperationHistory.status.in_([OperationStatus.ACTIVE, OperationStatus.FINISHED]),
             OperationHistory.booked_from < time_to,
             OperationHistory.booked_to > time_from
-        )
+        ).options(selectinload(OperationHistory.resource))
     )
     return bookings.all()
