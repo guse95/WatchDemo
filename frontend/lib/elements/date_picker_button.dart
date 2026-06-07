@@ -6,8 +6,9 @@ import 'package:frontend/txt_styles.dart';
 class DatePickerButton extends StatefulWidget {
   final DateTime initialDate;
   final ValueChanged<DateTime> onChanged;
+  final bool allowPick;
 
-  const DatePickerButton({super.key, required this.initialDate, required this.onChanged});
+  const DatePickerButton({super.key, required this.initialDate, required this.onChanged, required this.allowPick});
 
   @override
   State<DatePickerButton> createState() => _DatePickerButtonState();
@@ -15,6 +16,7 @@ class DatePickerButton extends StatefulWidget {
 
 class _DatePickerButtonState extends State<DatePickerButton> {
   late DateTime lastDate;
+  late DateTime today;
 
   DateTime _clearTime(DateTime date) {
     return DateTime(date.year, date.month, date.day);
@@ -28,10 +30,14 @@ class _DatePickerButtonState extends State<DatePickerButton> {
   @override
   void initState() {
     super.initState();
-    lastDate = widget.initialDate.add(const Duration(days: 29));
+    final now = DateTime.now();
+    today = DateTime(now.year, now.month, now.day);
+    lastDate = today.add(const Duration(days: 29));
   }
 
   Future<void> _openCalendar() async {
+    if (!widget.allowPick) return;
+
     final result = await showCalendarDatePicker2Dialog(
       context: context,
       value: [widget.initialDate],
@@ -42,7 +48,7 @@ class _DatePickerButtonState extends State<DatePickerButton> {
       config: CalendarDatePicker2WithActionButtonsConfig(
         calendarType: CalendarDatePicker2Type.single,
         currentDate: widget.initialDate,
-        firstDate: widget.initialDate,
+        firstDate: today,
         lastDate: lastDate,
 
         weekdayLabels: const ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'],
@@ -79,9 +85,6 @@ class _DatePickerButtonState extends State<DatePickerButton> {
     if (result == null || result.isEmpty || result.first == null) return;
 
     final pickedDate = _clearTime(result.first!);
-    // setState(() {
-    //   selectedDate = pickedDate;
-    // });
     widget.onChanged(pickedDate);
   }
 
@@ -89,7 +92,7 @@ class _DatePickerButtonState extends State<DatePickerButton> {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: _openCalendar,
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(10),
       child: Container(
         height: 48,
         padding: const EdgeInsets.symmetric(horizontal: 16),

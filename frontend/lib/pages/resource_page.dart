@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/colors.dart';
 import 'package:frontend/elements/date_picker_button.dart';
+import 'package:frontend/elements/date_plate.dart';
 import 'package:frontend/elements/ios_like_clipper.dart';
+import 'package:frontend/elements/purpose_field.dart';
+import 'package:frontend/elements/time_field.dart';
 import 'package:frontend/logic/resource_model.dart';
 import 'package:frontend/logic/service.dart';
 import 'package:frontend/txt_styles.dart';
@@ -25,6 +28,12 @@ class ResourcePage extends StatefulWidget {
 
 class _ResourcePageState extends State<ResourcePage> {
   late DateTime selectedDate;
+  final TextEditingController startTimeController = TextEditingController();
+  final GlobalKey<FormState> startFormKey = GlobalKey<FormState>();
+  final TextEditingController stopTimeController = TextEditingController();
+  final GlobalKey<FormState> stopFormKey = GlobalKey<FormState>();
+  final TextEditingController purposeController = TextEditingController();
+  final GlobalKey<FormState> purposeFormKey = GlobalKey<FormState>();
 
   @override
   void initState() {
@@ -219,6 +228,7 @@ class _ResourcePageState extends State<ResourcePage> {
                                     const SizedBox(width: 12),
                                     DatePickerButton(
                                       initialDate: selectedDate,
+                                      allowPick: true,
                                       onChanged: (date) {
                                         setState(() {
                                           selectedDate = date;
@@ -236,7 +246,96 @@ class _ResourcePageState extends State<ResourcePage> {
                           VerticalDivider(width: 1, thickness: 1, color: darkMilkC),
 
                           // БРОНЬ
-                          Expanded(flex: 2, child: Text("Right")),
+                          Expanded(
+                            flex: 2,
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(18, 18, 12, 12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text("Новое бронирование", style: TxtStyles.h3.copyWith(color: blackC)),
+                                  const SizedBox(height: 18),
+                                  Text(
+                                    "Дата",
+                                    style: TxtStyles.bodyMedium.copyWith(color: lightBlackC, fontWeight: FontWeight.w600),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  DatePlate(initialDate: selectedDate),
+                                  const SizedBox(height: 18),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              "Время начала",
+                                              style: TxtStyles.bodyMedium.copyWith(color: lightBlackC, fontWeight: FontWeight.w600),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Form(
+                                              key: startFormKey,
+                                              child: TimeField(controller: startTimeController, hintText: "HH:MM"),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              "Время окончания",
+                                              style: TxtStyles.bodyMedium.copyWith(color: lightBlackC, fontWeight: FontWeight.w600),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Form(
+                                              key: stopFormKey,
+                                              child: TimeField(controller: stopTimeController, hintText: "HH:MM"),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 18),
+                                  Text(
+                                    "Цель бронирования",
+                                    style: TxtStyles.bodyMedium.copyWith(color: lightBlackC, fontWeight: FontWeight.w600),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Form(
+                                    key: purposeFormKey,
+                                    child: PurposeField(controller: purposeController),
+                                  ),
+                                  const SizedBox(height: 18),
+                                  Material(
+                                    color: accentGreenC,
+                                    elevation: 2,
+                                    clipBehavior: Clip.antiAlias,
+                                    shape: IOSLikeShape(10),
+                                    child: SizedBox(
+                                      height: 48,
+                                      width: double.infinity,
+                                      child: InkWell(
+                                        onTap: () {
+                                          logMsg("D", "Resource page", "Book button tapped.");
+                                        },
+                                        child: Align(
+                                          alignment: Alignment.center,
+                                          child: Text(
+                                            "Забронировать",
+                                            style: TxtStyles.bodyMedium.copyWith(color: milkC, fontWeight: FontWeight.w500),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
