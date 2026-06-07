@@ -205,7 +205,6 @@ class _ResourcePageState extends State<ResourcePage> {
     }
     String timeFrom = startTimeController.text;
     String timeTo = stopTimeController.text;
-    print("${startTimeController.text} - ${stopTimeController.text}");
     if (!isLaterThan08(timeFrom)) {
       setState(() {
         _timeError = "Время начала не раньше 8:00";
@@ -240,8 +239,12 @@ class _ResourcePageState extends State<ResourcePage> {
       stopTimeController.text = "";
       purposeController.text = "";
       await _loadBookings(widget.resource.id, selectedDate);
-    } else {
-      AppNotify.show(context, message: "Ошибка.", type: NotifyType.error);
+    } else if (r.statusCode == 409) {
+      AppNotify.show(context, message: "Это время уже занято.", type: NotifyType.error);
+      await _loadBookings(widget.resource.id, selectedDate);
+    }
+    else {
+      AppNotify.show(context, message: "Произошла ошибка.", type: NotifyType.error);
       await _loadBookings(widget.resource.id, selectedDate);
     }
   }
