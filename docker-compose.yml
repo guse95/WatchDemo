@@ -31,8 +31,10 @@ services:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${DB_NAME}
+      - TZ=Europe/Moscow
+    command: ["postgres", "-c", "timezone=Europe/Moscow"]
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -44,8 +46,10 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    environment:
+      - TZ=Europe/Moscow
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: [ "CMD-SHELL", "redis-cli -a $${REDIS_PASSWORD} ping" ]
       interval: 5s
       timeout: 5s
       retries: 5

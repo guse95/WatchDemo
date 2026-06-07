@@ -114,7 +114,7 @@ async def get_my_bookings(
         select(OperationHistory)
         .where(
             OperationHistory.booker_id == user_id,
-            OperationHistory.status in (OperationStatus.ACTIVE, OperationStatus.FINISHED),
+            OperationHistory.status.in_([OperationStatus.ACTIVE, OperationStatus.FINISHED]),
             OperationHistory.booked_from < time_to,
             OperationHistory.booked_to > time_from
         )
@@ -133,7 +133,7 @@ async def get_resource_bookings(
         select(OperationHistory)
         .where(
             OperationHistory.resource_id == resource_id,
-            OperationHistory.status == OperationStatus.ACTIVE,
+            OperationHistory.status.in_([OperationStatus.ACTIVE, OperationStatus.FINISHED]),
             OperationHistory.booked_from < time_to,
             OperationHistory.booked_to > time_from
         )
