@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/colors.dart';
+import 'package:frontend/elements/bookings_timetable.dart';
 import 'package:frontend/elements/date_picker_button.dart';
 import 'package:frontend/elements/date_plate.dart';
 import 'package:frontend/elements/ios_like_clipper.dart';
@@ -39,14 +40,34 @@ class _ResourcePageState extends State<ResourcePage> {
   final GlobalKey<FormState> purposeFormKey = GlobalKey<FormState>();
 
   List<Booking>? _bookingsList;
+  int _bookingsRequestId = 0;
 
   Future<void> _loadBookings(int id, DateTime day) async {
-    _bookingsList = await HttpRequests().fetchBookingsForResource(id: id, day: day);
+    final requestId = ++_bookingsRequestId;
+    final bookings = await HttpRequests().fetchBookingsForResource(id: id, day: day);
+    if (!mounted || requestId != _bookingsRequestId || !_isSameDate(selectedDate, day)) {
+      return;
+    }
+    setState(() {
+      _bookingsList = bookings;
+    });
     if (kDebugMode) {
-      for (var booking in _bookingsList!) {
+      for (var booking in bookings) {
         print(booking);
       }
     }
+  }
+
+  bool _isSameDate(DateTime first, DateTime second) {
+    return first.year == second.year && first.month == second.month && first.day == second.day;
+  }
+
+  void _selectDate(DateTime date) {
+    setState(() {
+      selectedDate = date;
+      _bookingsList = null;
+    });
+    _loadBookings(widget.resource.id, date);
   }
 
   @override
@@ -206,9 +227,7 @@ class _ResourcePageState extends State<ResourcePage> {
                                             if (previous.isBefore(today)) {
                                               return;
                                             }
-                                            setState(() {
-                                              selectedDate = previous;
-                                            });
+                                            _selectDate(previous);
                                           },
                                           child: Icon(Icons.keyboard_arrow_left_rounded, size: 24, color: lightBlackC),
                                         ),
@@ -232,9 +251,7 @@ class _ResourcePageState extends State<ResourcePage> {
                                             if (next.isAfter(lastAvailableDate)) {
                                               return;
                                             }
-                                            setState(() {
-                                              selectedDate = next;
-                                            });
+                                            _selectDate(next);
                                           },
                                           child: Icon(Icons.keyboard_arrow_right_rounded, size: 24, color: lightBlackC),
                                         ),
@@ -245,13 +262,18 @@ class _ResourcePageState extends State<ResourcePage> {
                                       initialDate: selectedDate,
                                       allowPick: true,
                                       onChanged: (date) {
-                                        setState(() {
-                                          selectedDate = date;
-                                        });
+                                        _selectDate(date);
                                         logMsg("D", "Date picker", "Picked $selectedDate");
                                       },
                                     ),
                                   ],
+                                ),
+                                const SizedBox(height: 12),
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.fromLTRB(0, 0, 18, 6),
+                                    child: BookingsTimetable(bookings: _bookingsList, date: selectedDate),
+                                  ),
                                 ),
                               ],
                             ),
