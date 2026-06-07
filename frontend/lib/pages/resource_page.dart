@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/colors.dart';
+import 'package:frontend/elements/app_notify.dart';
 import 'package:frontend/elements/bookings_timetable.dart';
 import 'package:frontend/elements/date_picker_button.dart';
 import 'package:frontend/elements/date_plate.dart';
@@ -38,6 +39,8 @@ class _ResourcePageState extends State<ResourcePage> {
   final GlobalKey<FormState> stopFormKey = GlobalKey<FormState>();
   final TextEditingController purposeController = TextEditingController();
   final GlobalKey<FormState> purposeFormKey = GlobalKey<FormState>();
+
+  String? _timeError;
 
   List<Booking>? _bookingsList;
   int _bookingsRequestId = 0;
@@ -142,6 +145,105 @@ class _ResourcePageState extends State<ResourcePage> {
     }
 
     return Row(children: props);
+  }
+
+  bool isLaterThan08(String time) {
+    final parts = time.split(':');
+
+    final hour = int.parse(parts[0]);
+    final minute = int.parse(parts[1]);
+
+    final timeInMinutes = hour * 60 + minute;
+    const minTimeInMinutes = 8 * 60; // 08:00
+
+    return timeInMinutes > minTimeInMinutes;
+  }
+
+  bool isEarlierThan20(String time) {
+    final parts = time.split(':');
+
+    final hour = int.parse(parts[0]);
+    final minute = int.parse(parts[1]);
+
+    final timeInMinutes = hour * 60 + minute;
+    const maxTimeInMinutes = 20 * 60; // 20:00
+
+    return timeInMinutes < maxTimeInMinutes;
+  }
+
+  bool isGapValid(String from, String to) {
+    final partsFrom = from.split(':');
+    final hourF = int.parse(partsFrom[0]);
+    final minuteF = int.parse(partsFrom[1]);
+
+    final partsTo = to.split(':');
+    final hourT = int.parse(partsTo[0]);
+    final minuteT = int.parse(partsTo[1]);
+
+    final minutesF = hourF * 60 + minuteF;
+    final minutesT = hourT * 60 + minuteT;
+    return (minutesT - minutesF) >= 30;
+  }
+
+  String buildBookingDateTimeString(DateTime selectedDate, String time) {
+    final year = selectedDate.year.toString().padLeft(4, '0');
+    final month = selectedDate.month.toString().padLeft(2, '0');
+    final day = selectedDate.day.toString().padLeft(2, '0');
+    return '$year-$month-${day}T$time';
+  }
+
+  Future<void> _bookResource() async {
+    setState(() {
+      _timeError = null;
+    });
+
+    if (startTimeController.text.isEmpty || stopTimeController.text.isEmpty) {
+      setState(() {
+        _timeError = "Заполните время";
+      });
+      return;
+    }
+    String timeFrom = startTimeController.text;
+    String timeTo = stopTimeController.text;
+    print("${startTimeController.text} - ${stopTimeController.text}");
+    if (!isLaterThan08(timeFrom)) {
+      setState(() {
+        _timeError = "Время начала не раньше 8:00";
+      });
+      return;
+    }
+    if (!isEarlierThan20(timeTo)) {
+      setState(() {
+        _timeError = "Время окончания не позже 20:00";
+      });
+      return;
+    }
+    if (!isGapValid(timeFrom, timeTo)) {
+      setState(() {
+        _timeError = "Промежуток не меньше 30 мин.";
+      });
+      return;
+    }
+    bool purposeValid = purposeFormKey.currentState!.validate();
+    if (!purposeValid) {
+      return;
+    }
+
+    String from = buildBookingDateTimeString(selectedDate, timeFrom);
+    String to = buildBookingDateTimeString(selectedDate, timeTo);
+
+    final r = await HttpRequests().bookResourceRequest(id: widget.resource.id, desc: purposeController.text, from: from, to: to);
+    if (!mounted) return;
+    if (r.statusCode == 200) {
+      AppNotify.show(context, message: "Успешно забронировано.", type: NotifyType.success);
+      startTimeController.text = "";
+      stopTimeController.text = "";
+      purposeController.text = "";
+      await _loadBookings(widget.resource.id, selectedDate);
+    } else {
+      AppNotify.show(context, message: "Ошибка.", type: NotifyType.error);
+      await _loadBookings(widget.resource.id, selectedDate);
+    }
   }
 
   @override
@@ -336,6 +438,10 @@ class _ResourcePageState extends State<ResourcePage> {
                                       ),
                                     ],
                                   ),
+                                  if (_timeError != null) ...[
+                                    const SizedBox(height: 6),
+                                    Text(_timeError!, style: TxtStyles.captionMedium.copyWith(color: Colors.red)),
+                                  ],
                                   const SizedBox(height: 18),
                                   Text(
                                     "Цель бронирования",
@@ -356,8 +462,9 @@ class _ResourcePageState extends State<ResourcePage> {
                                       height: 48,
                                       width: double.infinity,
                                       child: InkWell(
-                                        onTap: () {
+                                        onTap: () async {
                                           logMsg("D", "Resource page", "Book button tapped.");
+                                          await _bookResource();
                                         },
                                         child: Align(
                                           alignment: Alignment.center,

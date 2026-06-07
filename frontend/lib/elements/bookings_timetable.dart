@@ -10,7 +10,11 @@ class BookingsTimetable extends StatefulWidget {
   final List<Booking>? bookings;
   final DateTime date;
 
-  const BookingsTimetable({super.key, required this.bookings, required this.date});
+  const BookingsTimetable({
+    super.key,
+    required this.bookings,
+    required this.date,
+  });
 
   @override
   State<BookingsTimetable> createState() => _BookingsTimetableState();
@@ -23,6 +27,7 @@ class _BookingsTimetableState extends State<BookingsTimetable> {
   static const double _scheduleGap = 8;
   static const Color _lightGreen = Color(0xFFE7F1E3);
   static const Color _lightYellow = Color(0xFFFFF2C9);
+  static const Color _darkYellow = Color(0xFF7A5A00);
 
   Timer? _clockTimer;
   DateTime _now = DateTime.now();
@@ -50,7 +55,7 @@ class _BookingsTimetableState extends State<BookingsTimetable> {
     if (widget.bookings == null) {
       return const ColoredBox(
         color: Colors.white,
-        child: Center(child: CircularProgressIndicator(color: darkGreenC,)),
+        child: Center(child: CircularProgressIndicator(color: darkGreenC)),
       );
     }
 
@@ -59,15 +64,26 @@ class _BookingsTimetableState extends State<BookingsTimetable> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final verticalInset = math.min(9.0, constraints.maxHeight / 2);
-          final timelineHeight = math.max(0.0, constraints.maxHeight - verticalInset * 2);
+          final timelineHeight = math.max(
+            0.0,
+            constraints.maxHeight - verticalInset * 2,
+          );
           final hourHeight = timelineHeight / (_endHour - _startHour);
-          final scaleWidth = math.min(_timeScaleWidth, constraints.maxWidth * 0.25);
+          final scaleWidth = math.min(
+            _timeScaleWidth,
+            constraints.maxWidth * 0.25,
+          );
           final scheduleLeft = scaleWidth + _scheduleGap;
 
           return Stack(
             clipBehavior: Clip.hardEdge,
             children: [
-              ..._buildHourRows(hourHeight: hourHeight, verticalInset: verticalInset, scaleWidth: scaleWidth, scheduleLeft: scheduleLeft),
+              ..._buildHourRows(
+                hourHeight: hourHeight,
+                verticalInset: verticalInset,
+                scaleWidth: scaleWidth,
+                scheduleLeft: scheduleLeft,
+              ),
               ..._buildBookingCards(
                 timelineHeight: timelineHeight,
                 hourHeight: hourHeight,
@@ -75,7 +91,11 @@ class _BookingsTimetableState extends State<BookingsTimetable> {
                 scheduleLeft: scheduleLeft,
               ),
               if (_shouldShowCurrentTime())
-                ..._buildCurrentTimeIndicator(hourHeight: hourHeight, verticalInset: verticalInset, scheduleLeft: scheduleLeft),
+                ..._buildCurrentTimeIndicator(
+                  hourHeight: hourHeight,
+                  verticalInset: verticalInset,
+                  scheduleLeft: scheduleLeft,
+                ),
             ],
           );
         },
@@ -122,12 +142,33 @@ class _BookingsTimetableState extends State<BookingsTimetable> {
     required double verticalInset,
     required double scheduleLeft,
   }) {
-    final dayStart = DateTime(widget.date.year, widget.date.month, widget.date.day, _startHour);
-    final dayEnd = DateTime(widget.date.year, widget.date.month, widget.date.day, _endHour);
+    final dayStart = DateTime(
+      widget.date.year,
+      widget.date.month,
+      widget.date.day,
+      _startHour,
+    );
+    final dayEnd = DateTime(
+      widget.date.year,
+      widget.date.month,
+      widget.date.day,
+      _endHour,
+    );
     final visibleBookings =
         widget.bookings!
-            .map((booking) => (booking: booking, start: _asLocal(booking.bookedFrom), end: _asLocal(booking.bookedTo)))
-            .where((item) => item.end.isAfter(item.start) && item.start.isBefore(dayEnd) && item.end.isAfter(dayStart))
+            .map(
+              (booking) => (
+                booking: booking,
+                start: _asLocal(booking.bookedFrom),
+                end: _asLocal(booking.bookedTo),
+              ),
+            )
+            .where(
+              (item) =>
+                  item.end.isAfter(item.start) &&
+                  item.start.isBefore(dayEnd) &&
+                  item.end.isAfter(dayStart),
+            )
             .toList()
           ..sort((a, b) => a.start.compareTo(b.start));
 
@@ -139,6 +180,7 @@ class _BookingsTimetableState extends State<BookingsTimetable> {
           dayStart: dayStart,
           dayEnd: dayEnd,
           color: index.isEven ? _lightGreen : _lightYellow,
+          textColor: index.isEven ? darkGreenC : _darkYellow,
           timelineHeight: timelineHeight,
           hourHeight: hourHeight,
           verticalInset: verticalInset,
@@ -153,17 +195,23 @@ class _BookingsTimetableState extends State<BookingsTimetable> {
     required DateTime dayStart,
     required DateTime dayEnd,
     required Color color,
+    required Color textColor,
     required double timelineHeight,
     required double hourHeight,
     required double verticalInset,
     required double scheduleLeft,
   }) {
-    final visibleStart = bookingStart.isBefore(dayStart) ? dayStart : bookingStart;
+    final visibleStart = bookingStart.isBefore(dayStart)
+        ? dayStart
+        : bookingStart;
     final visibleEnd = bookingEnd.isAfter(dayEnd) ? dayEnd : bookingEnd;
     final minutesFromStart = visibleStart.difference(dayStart).inMinutes;
     final durationInMinutes = visibleEnd.difference(visibleStart).inMinutes;
     final top = verticalInset + minutesFromStart / 60 * hourHeight;
-    final height = math.min(durationInMinutes / 60 * hourHeight, verticalInset + timelineHeight - top);
+    final height = math.min(
+      durationInMinutes / 60 * hourHeight,
+      verticalInset + timelineHeight - top,
+    );
 
     return Positioned(
       top: top,
@@ -179,7 +227,10 @@ class _BookingsTimetableState extends State<BookingsTimetable> {
               final verticalPadding = constraints.maxHeight >= 40 ? 6.0 : 2.0;
 
               return Padding(
-                padding: EdgeInsets.symmetric(horizontal: 10, vertical: verticalPadding),
+                padding: EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: verticalPadding,
+                ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -189,7 +240,10 @@ class _BookingsTimetableState extends State<BookingsTimetable> {
                         'Бронирование',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TxtStyles.calendarEventTitle.copyWith(color: blackC, height: 1.1),
+                        style: TxtStyles.calendarEventTitle.copyWith(
+                          color: textColor,
+                          height: 1.1,
+                        ),
                       ),
                     ),
                     Flexible(
@@ -197,7 +251,10 @@ class _BookingsTimetableState extends State<BookingsTimetable> {
                         '${_formatTime(bookingStart)} – ${_formatTime(bookingEnd)}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TxtStyles.calendarEventTime.copyWith(color: lightBlackC, height: 1.1),
+                        style: TxtStyles.calendarEventTime.copyWith(
+                          color: textColor,
+                          height: 1.1,
+                        ),
                       ),
                     ),
                   ],
@@ -216,8 +273,13 @@ class _BookingsTimetableState extends State<BookingsTimetable> {
         (_now.hour < _endHour || (_now.hour == _endHour && _now.minute == 0));
   }
 
-  List<Widget> _buildCurrentTimeIndicator({required double hourHeight, required double verticalInset, required double scheduleLeft}) {
-    final minutesFromStart = (_now.hour - _startHour) * 60 + _now.minute + _now.second / 60;
+  List<Widget> _buildCurrentTimeIndicator({
+    required double hourHeight,
+    required double verticalInset,
+    required double scheduleLeft,
+  }) {
+    final minutesFromStart =
+        (_now.hour - _startHour) * 60 + _now.minute + _now.second / 60;
     final top = verticalInset + minutesFromStart / 60 * hourHeight;
 
     return [
@@ -233,7 +295,10 @@ class _BookingsTimetableState extends State<BookingsTimetable> {
         child: Container(
           width: 10,
           height: 10,
-          decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+          decoration: const BoxDecoration(
+            color: Colors.red,
+            shape: BoxShape.circle,
+          ),
         ),
       ),
     ];
@@ -242,7 +307,9 @@ class _BookingsTimetableState extends State<BookingsTimetable> {
   DateTime _asLocal(DateTime value) => value.isUtc ? value.toLocal() : value;
 
   bool _isSameDate(DateTime first, DateTime second) {
-    return first.year == second.year && first.month == second.month && first.day == second.day;
+    return first.year == second.year &&
+        first.month == second.month &&
+        first.day == second.day;
   }
 
   String _formatTime(DateTime value) {

@@ -3,6 +3,7 @@ class Booking {
   final int bookerId;
   final int resourceId;
   final String status;
+  final String description;
   final DateTime createdAt;
   final DateTime lastUpdateAt;
   final DateTime bookedFrom;
@@ -17,6 +18,7 @@ class Booking {
     required this.lastUpdateAt,
     required this.bookedFrom,
     required this.bookedTo,
+    required this.description,
   });
 
   factory Booking.fromJson(Map<String, dynamic> json) {
@@ -25,6 +27,7 @@ class Booking {
       bookerId: json['booker_id'],
       resourceId: json['resource_id'],
       status: json['status'],
+      description: json['description'],
       createdAt: _parseDateTimeToMinutes(json['created_at']),
       lastUpdateAt: _parseDateTimeToMinutes(json['last_update_at']),
       bookedFrom: _parseDateTimeToMinutes(json['booked_from']),
@@ -45,6 +48,7 @@ class Booking {
         'bookerId: $bookerId, '
         'resourceId: $resourceId, '
         'status: $status, '
+        'desc: $description, '
         'createdAt: $createdAt, '
         'lastUpdateAt: $lastUpdateAt, '
         'bookedFrom: $bookedFrom, '

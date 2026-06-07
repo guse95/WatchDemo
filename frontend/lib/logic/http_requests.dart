@@ -142,9 +142,7 @@ class HttpRequests {
     final endTime = dateTimeToApiString(endOfDay);
 
     final response = await http.get(
-      Uri.parse(
-        "$apiUrl/resources/user/book/$id",
-      ).replace(queryParameters: {"time_from": startTime, "time_to": endTime}),
+      Uri.parse("$apiUrl/resources/user/book/$id").replace(queryParameters: {"time_from": startTime, "time_to": endTime}),
       headers: {"Authorization": "Bearer $accessToken"},
     );
     logMsg("D", "Fetch bookings request", "Code ${response.statusCode}. Body:\n${jsonDecode(response.body)}");
@@ -156,5 +154,18 @@ class HttpRequests {
       bookings.add(bookingObj);
     }
     return bookings;
+  }
+
+  Future<http.Response> bookResourceRequest({required int id, required String desc, required String from, required String to}) async {
+    final accessToken = await AuthService().getAccessToken();
+
+    final response = await http.post(
+      Uri.parse(
+        "$apiUrl/resources/user/book/$id",
+      ).replace(queryParameters: {"description": desc, "booked_from": from, "booked_to": to}),
+      headers: {"Authorization": "Bearer $accessToken"},
+    );
+    logMsg("D", "Book res request", "Code ${response.statusCode}. Body:\n${jsonDecode(response.body)}");
+    return response;
   }
 }
