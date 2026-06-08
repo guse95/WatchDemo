@@ -10,6 +10,13 @@ bool? parseBool(dynamic value) {
   return null;
 }
 
+int? parseInt(dynamic value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) return int.tryParse(value);
+  return null;
+}
+
 class Resource {
   final int id;
   final String name;
@@ -62,28 +69,32 @@ class Resource {
   });
 
   factory Resource.fromJson(Map<String, dynamic> json) {
+    final extraAttributes = json['extra_attributes'] is Map
+        ? Map<String, dynamic>.from(json['extra_attributes'] as Map)
+        : <String, dynamic>{};
+
     return Resource(
       id: json['id'],
       name: json['name'],
       type: json['type'],
-      description: json['description'],
-      roomCapacity: int.tryParse(json['extra_attributes']['room-capacity'] ?? ""),
-      roomArea: int.tryParse(json['extra_attributes']['room-area'] ?? ""),
-      roomHasProjector: parseBool(json['extra_attributes']['room-has-projector']),
-      roomHasScreen: parseBool(json['extra_attributes']['room-has-screen']),
-      roomHasTV: parseBool(json['extra_attributes']['room-has-tv']),
-      roomHasBoard: parseBool(json['extra_attributes']['room-has-board']),
-      notebookOS: json['extra_attributes']['notebook-os'],
-      notebookCPU: json['extra_attributes']['notebook-cpu'],
-      notebookDiagonal: int.tryParse(json['extra_attributes']['notebook-diagonal'] ?? ""),
-      boardType: json['extra_attributes']['board-type'],
-      boardHeight: int.tryParse(json['extra_attributes']['board-height'] ?? ""),
-      boardWidth: int.tryParse(json['extra_attributes']['board-width'] ?? ""),
-      prjResolution: json['extra_attributes']['projector-resolution'],
-      prjHdmi: parseBool(json['extra_attributes']['projector-hdmi']),
-      prjDp: parseBool(json['extra_attributes']['projector-dp']),
-      prjVga: parseBool(json['extra_attributes']['projector-vga']),
-      prjDvi: parseBool(json['extra_attributes']['projector-dvi']),
+      description: json['description'] ?? '',
+      roomCapacity: parseInt(extraAttributes['room-capacity']),
+      roomArea: parseInt(extraAttributes['room-area']),
+      roomHasProjector: parseBool(extraAttributes['room-has-projector']),
+      roomHasScreen: parseBool(extraAttributes['room-has-screen']),
+      roomHasTV: parseBool(extraAttributes['room-has-tv']),
+      roomHasBoard: parseBool(extraAttributes['room-has-board']),
+      notebookOS: extraAttributes['notebook-os'],
+      notebookCPU: extraAttributes['notebook-cpu'],
+      notebookDiagonal: parseInt(extraAttributes['notebook-diagonal']),
+      boardType: extraAttributes['board-type'],
+      boardHeight: parseInt(extraAttributes['board-height']),
+      boardWidth: parseInt(extraAttributes['board-width']),
+      prjResolution: extraAttributes['projector-resolution'],
+      prjHdmi: parseBool(extraAttributes['projector-hdmi']),
+      prjDp: parseBool(extraAttributes['projector-dp']),
+      prjVga: parseBool(extraAttributes['projector-vga']),
+      prjDvi: parseBool(extraAttributes['projector-dvi']),
     );
   }
 }
