@@ -29,7 +29,10 @@ async def update_status_for_bookings():
         async with db.begin():
             await db.execute(
                 update(OperationHistory)
-                .where(OperationHistory.booked_to < time_msc)
+                .where(
+                    OperationHistory.status == OperationStatus.ACTIVE,
+                    OperationHistory.booked_to < time_msc
+                )
                 .values(status = OperationStatus.FINISHED,)
             )
 
