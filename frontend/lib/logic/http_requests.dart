@@ -160,12 +160,44 @@ class HttpRequests {
     final accessToken = await AuthService().getAccessToken();
 
     final response = await http.post(
-      Uri.parse(
-        "$apiUrl/resources/user/book/$id",
-      ).replace(queryParameters: {"description": desc, "booked_from": from, "booked_to": to}),
+      Uri.parse("$apiUrl/resources/user/book/$id").replace(queryParameters: {"description": desc, "booked_from": from, "booked_to": to}),
       headers: {"Authorization": "Bearer $accessToken"},
     );
     logMsg("D", "Book res request", "Code ${response.statusCode}. Body:\n${jsonDecode(response.body)}");
+    return response;
+  }
+
+  Future<List<Booking>> fetchMyBookings() async {
+    final accessToken = await AuthService().getAccessToken();
+
+    final now = DateTime.now();
+    final nowPlus30 = now.add(const Duration(days: 30));
+    String from = dateTimeToApiString(now);
+    String to = dateTimeToApiString(nowPlus30);
+
+    final response = await http.get(
+      Uri.parse("$apiUrl/resources/user/book/my").replace(queryParameters: {"time_from": from, "time_to": to}),
+      headers: {"Authorization": "Bearer $accessToken"},
+    );
+    final data = jsonDecode(response.body);
+    logMsg("D", "Fetch my bookings", "Code ${response.statusCode}. Body:\n$data");
+
+    if (response.statusCode != 200) {
+      throw Exception("Failed to fetch bookings: ${response.statusCode}");
+    }
+    if (data is! List) {
+      throw const FormatException("Bookings response must be a list");
+    }
+
+    final bookings = data.map((booking) => Booking.fromJson(Map<String, dynamic>.from(booking as Map))).toList()
+      ..sort((first, second) => first.bookedFrom.compareTo(second.bookedFrom));
+    return bookings;
+  }
+
+  Future<http.Response> cancelBookingRequest({required int id}) async {
+    final accessToken = await AuthService().getAccessToken();
+    final response = await http.patch(Uri.parse("$apiUrl/resources/user/book/$id"), headers: {"Authorization": "Bearer $accessToken"});
+    logMsg("D", "Cancel book request", "Code ${response.statusCode}. Body:\n${jsonDecode(response.body)}");
     return response;
   }
 }

@@ -1,3 +1,5 @@
+import 'package:frontend/logic/resource_model.dart';
+
 class Booking {
   final int id;
   final int bookerId;
@@ -8,6 +10,7 @@ class Booking {
   final DateTime lastUpdateAt;
   final DateTime bookedFrom;
   final DateTime bookedTo;
+  final Resource? resource;
 
   const Booking({
     required this.id,
@@ -19,9 +22,12 @@ class Booking {
     required this.bookedFrom,
     required this.bookedTo,
     required this.description,
+    this.resource,
   });
 
   factory Booking.fromJson(Map<String, dynamic> json) {
+    final resourceJson = json['resource'];
+
     return Booking(
       id: json['id'],
       bookerId: json['booker_id'],
@@ -32,13 +38,22 @@ class Booking {
       lastUpdateAt: _parseDateTimeToMinutes(json['last_update_at']),
       bookedFrom: _parseDateTimeToMinutes(json['booked_from']),
       bookedTo: _parseDateTimeToMinutes(json['booked_to']),
+      resource: resourceJson is Map
+          ? Resource.fromJson(Map<String, dynamic>.from(resourceJson))
+          : null,
     );
   }
 
   static DateTime _parseDateTimeToMinutes(String value) {
     final dateTime = DateTime.parse(value);
 
-    return DateTime(dateTime.year, dateTime.month, dateTime.day, dateTime.hour, dateTime.minute);
+    return DateTime(
+      dateTime.year,
+      dateTime.month,
+      dateTime.day,
+      dateTime.hour,
+      dateTime.minute,
+    );
   }
 
   @override
@@ -52,7 +67,8 @@ class Booking {
         'createdAt: $createdAt, '
         'lastUpdateAt: $lastUpdateAt, '
         'bookedFrom: $bookedFrom, '
-        'bookedTo: $bookedTo'
+        'bookedTo: $bookedTo, '
+        'resource: $resource'
         ')';
   }
 }

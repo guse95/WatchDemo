@@ -3,10 +3,12 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:frontend/colors.dart';
 import 'package:frontend/elements/animated_menu.dart';
 import 'package:frontend/elements/ios_like_clipper.dart';
+import 'package:frontend/logic/http_requests.dart';
 import 'package:frontend/logic/resource_model.dart';
 import 'package:frontend/logic/service.dart';
 import 'package:frontend/logic/user_info_provider.dart';
 import 'package:frontend/pages/manage_resources_page.dart';
+import 'package:frontend/pages/my_bookings_page.dart';
 import 'package:frontend/pages/resource_list_page.dart';
 import 'package:frontend/pages/resource_page.dart';
 import 'package:frontend/profile_menu.dart';
@@ -59,11 +61,11 @@ class _HomePageState extends State<HomePage> {
           },
         );
       case 1:
-        return const SizedBox.shrink();
+        return MyBookingsPage(
+          bookingsLoader: HttpRequests().fetchMyBookings,
+        );
       case 2:
         return const ManageResourcesPage();
-      case 3:
-        return const SizedBox.shrink();
       default:
         return const SizedBox.shrink();
     }
